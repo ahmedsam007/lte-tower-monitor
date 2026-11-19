@@ -1,0 +1,21 @@
+{
+  "host": "192.168.0.1",
+  "user": "admin",
+  "password": "CHANGE_ME",
+  "at_port": "/tmp/dev/ttyUSB1",
+  "poll_seconds": 5,
+  "listen_port": 8765,
+  "opencellid_key": "",
+  "mcc": 0,
+  "mnc": 0,
+  "tplink": {
+    "host": "192.168.1.1",
+    "user": "admin",
+    "password": ""
+  },
+  "archer": {
+    "host": "192.168.1.103",
+    "user": "admin",
+    "password": ""
+  }
+}

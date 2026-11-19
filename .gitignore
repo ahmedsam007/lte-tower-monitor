@@ -1,0 +1,19 @@
+# Your own settings and passwords. Never commit this; config.example.json is the template.
+config.json
+
+# Everything Tower Monitor records while it runs (your readings, devices, locations)
+tower_log.csv
+tower_log.csv.tmp
+locations.json
+device_usage.json
+device_usage.json.tmp
+device_names.json
+device_names.json.tmp
+*.log
+
+# Python and OS files
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

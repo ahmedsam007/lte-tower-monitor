@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tower Monitor</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --text: #0b0b0b; --text2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+    --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948; --other: #898781;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --text: #f0efec; --text2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+      --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-bottom: 16px; }
+  h1 { font-size: 20px; margin: 0; font-weight: 650; }
+  h2 { font-size: 14px; margin: 0 0 2px; font-weight: 650; }
+  .sub { color: var(--text2); font-size: 12.5px; }
+  .muted { color: var(--muted); }
+  #conn { margin-left: auto; font-size: 12.5px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .banner { display: none; margin-bottom: 14px; border-left: 4px solid var(--critical); }
+  .banner.show { display: block; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .tile .label { color: var(--text2); font-size: 12.5px; }
+  .tile .value { font-size: 24px; font-weight: 650; line-height: 1.25; margin-top: 2px; overflow-wrap: anywhere; }
+  .tile .value.small { font-size: 18px; }
+  .tile .note { color: var(--text2); font-size: 12.5px; margin-top: 2px; }
+  .speed { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 2px; }
+  .speed .dir { color: var(--text2); font-size: 12.5px; }
+  .speed .num { font-size: 18px; font-weight: 650; line-height: 1.3; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+  .state { display: inline-flex; align-items: center; gap: 7px; }
+  .grid2 { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 800px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+  .meter { margin-top: 12px; }
+  .meter .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .meter .name { font-weight: 600; }
+  .meter .num { font-variant-numeric: tabular-nums; font-weight: 650; }
+  .meter .track { height: 8px; border-radius: 4px; margin: 5px 0 3px; overflow: hidden;
+                  background: color-mix(in srgb, var(--fill, var(--muted)) 20%, var(--surface)); }
+  .meter .fill { height: 100%; border-radius: 4px; background: var(--fill, var(--muted)); width: 0; transition: width .4s; }
+  .meter .hint { color: var(--text2); font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--text2); font-weight: 600; font-size: 12.5px; padding: 6px 8px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: middle; white-space: nowrap; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 7px; }
+  .bar { height: 6px; border-radius: 0 3px 3px 0; background: var(--s1); min-width: 2px; }
+  .barcell { width: 70px; min-width: 50px; }
+  .site { color: var(--text2); font-size: 12px; padding-left: 21px; }
+  tr.old td { color: var(--text2); }
+  .badge { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 9px; border: 1px solid var(--border); color: var(--text2); margin-left: 4px; }
+  .badge.on { color: var(--text); border-color: var(--axis); font-weight: 600; }
+  .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 18px 0 10px; }
+  .filters .lab { color: var(--text2); font-size: 12.5px; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .seg button { font: inherit; font-size: 13px; color: var(--text2); background: none; border: 0; padding: 5px 12px; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button[aria-pressed="true"] { color: var(--text); font-weight: 650; background: color-mix(in srgb, var(--text) 8%, transparent); }
+  .linkbtn { font: inherit; font-size: 12.5px; color: var(--text2); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 3px 10px; cursor: pointer; }
+  figure { margin: 0 0 12px; position: relative; }
+  figure .head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; margin-bottom: 6px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--text2); }
+  .legend span { display: inline-flex; align-items: center; }
+  svg { display: block; width: 100%; overflow: visible; }
+  svg text { font: 11.5px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--muted); font-variant-numeric: tabular-nums; }
+  svg text.lbl { fill: var(--text2); font-weight: 600; }
+  .tip { position: absolute; pointer-events: none; display: none; background: var(--surface); border: 1px solid var(--border);
+         border-radius: 8px; padding: 7px 10px; font-size: 12.5px; box-shadow: 0 4px 14px rgba(0,0,0,.14); min-width: 130px; z-index: 5; }
+  .tip .when { color: var(--text2); margin-bottom: 4px; }
+  .tip .r { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .tip .r b { font-variant-numeric: tabular-nums; }
+  .tip .r .nm { color: var(--text2); }
+  .key { width: 12px; height: 2px; border-radius: 1px; flex: none; }
+  .empty { color: var(--text2); padding: 26px 0; text-align: center; }
+  .events { max-height: 260px; overflow-y: auto; }
+  .events div { padding: 6px 0; border-bottom: 1px solid var(--grid); display: flex; gap: 12px; }
+  .events time { color: var(--text2); font-variant-numeric: tabular-nums; flex: none; }
+  .datatable { max-height: 300px; overflow: auto; margin-top: 10px; display: none; }
+  .datatable.show { display: block; }
+  .dist { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 12px 24px; align-items: start; }
+  @media (max-width: 800px) { .dist { grid-template-columns: minmax(0, 1fr); } }
+  .dist .value { font-size: 24px; font-weight: 650; margin-top: 2px; }
+  .dist summary { cursor: pointer; font-weight: 600; }
+  .dist label { display: block; margin-top: 10px; font-size: 12.5px; color: var(--text2); }
+  .dist input { display: block; width: 100%; max-width: 320px; margin-top: 3px; font: inherit; color: var(--text); background: var(--page);
+                border: 1px solid var(--axis); border-radius: 7px; padding: 6px 9px; }
+  .dist .btns { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+  .foot { color: var(--muted); font-size: 12px; margin-top: 18px; }
+  .btn { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--text); background: var(--surface);
+         border: 1px solid var(--axis); border-radius: 7px; padding: 3px 10px; cursor: pointer; }
+  .btn:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+  .btn:disabled { color: var(--muted); border-color: var(--border); cursor: default; }
+  .btn.primary { background: var(--text); color: var(--page); border-color: var(--text); }
+  .btn.primary:hover:not(:disabled) { background: var(--text2); }
+  .action { display: none; margin-bottom: 14px; border-left: 4px solid var(--s1); }
+  .action.show { display: block; }
+  .action.ok { border-left-color: var(--good); }
+  .action.bad { border-left-color: var(--critical); }
+  .action .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .steps { margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; max-height: 230px; overflow-y: auto; }
+  .steps li { display: flex; gap: 12px; padding: 3px 0; }
+  .steps time { color: var(--text2); font-variant-numeric: tabular-nums; flex: none; }
+  dialog { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text);
+           padding: 18px 20px; max-width: min(460px, calc(100vw - 32px)); font: inherit; }
+  dialog::backdrop { background: rgba(0, 0, 0, .45); }
+  dialog h2 { font-size: 16px; margin-bottom: 8px; }
+  dialog ul { margin: 0; padding-left: 18px; color: var(--text2); }
+  dialog li { margin: 6px 0; }
+  dialog .btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  dialog .btn { padding: 6px 14px; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Tower Monitor</h1>
+    <span class="sub" id="subtitle">D-Link DWR-921 LTE modem</span>
+    <a href="/devices" class="sub" style="color:var(--s1)">Home devices →</a>
+    <span id="conn"><span class="dot" id="connDot" style="background:var(--muted)"></span><span id="connText">Connecting…</span></span>
+  </header>
+
+  <div class="card banner" id="banner"><strong id="bannerTitle"></strong><div class="sub" id="bannerText"></div></div>
+
+  <section class="card action" id="action" aria-live="polite">
+    <div class="top"><strong id="actTitle"></strong><button class="linkbtn" id="actHide" type="button">Hide</button></div>
+    <div class="sub" id="actNote"></div>
+    <ol class="steps" id="actSteps"></ol>
+  </section>
+
+  <section class="tiles">
+    <div class="card tile"><div class="label">Connected tower</div><div class="value" id="kTower">–</div><div class="note" id="kTowerNote">&nbsp;</div></div>
+    <div class="card tile"><div class="label">Internet</div><div class="value small"><span class="state"><span class="dot" id="kNetDot"></span><span id="kNet">–</span></span></div><div class="note" id="kNetNote">&nbsp;</div></div>
+    <div class="card tile"><div class="label">Speed in use now</div>
+      <div class="speed"><span class="dir">Download</span><span class="num" id="kDown">–</span></div>
+      <div class="speed"><span class="dir">Upload</span><span class="num" id="kUp">–</span></div>
+      <div class="note" id="kSpeedNote">Mbps, all devices together</div></div>
+    <div class="card tile"><div class="label">Network</div><div class="value small" id="kOp">–</div><div class="note" id="kOpNote">&nbsp;</div></div>
+    <div class="card tile"><div class="label">Tower lock</div><div class="value small" id="kLock">–</div><div class="note" id="kLockNote">&nbsp;</div><button class="btn" id="unlockBtn" type="button" style="display:none;margin-top:8px">Remove lock</button></div>
+    <div class="card tile"><div class="label">Tower switches</div><div class="value" id="kSw">–</div><div class="note" id="kSwNote">&nbsp;</div></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>Signal of the connected tower</h2>
+      <div class="sub">Higher is better on all three.</div>
+      <div class="meter" id="mRsrp"></div>
+      <div class="meter" id="mRsrq"></div>
+      <div class="meter" id="mSinr"></div>
+    </div>
+    <div class="card">
+      <h2>Towers the modem can see</h2>
+      <div class="sub">Strongest first. The list changes as the modem scans. Lock keeps the modem on the tower you pick. Site and ping are known only for the connected tower; ping is the middle reply time of the router's test packets in the last minute.</div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Tower</th><th class="n">EARFCN</th><th class="n">Strength</th><th></th><th class="n">Quality</th><th class="n">Ping</th><th>Role</th><th><span style="position:absolute;left:-9999px">Lock</span></th></tr></thead>
+        <tbody id="towerRows"></tbody>
+      </table></div>
+      <div class="empty" id="towerEmpty" style="display:none">No towers reported yet.</div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-bottom:12px">
+    <div class="dist">
+      <div>
+        <h2>Distance to the connected tower</h2>
+        <div class="value" id="dVal">–</div>
+        <div class="sub" id="dNote"></div>
+      </div>
+      <details id="dSet">
+        <summary>Set locations</summary>
+        <label>My location
+          <input id="dMe" placeholder="latitude, longitude   e.g. 31.5017, 34.4668" autocomplete="off"></label>
+        <div class="btns"><button class="linkbtn" id="dGeo" type="button">Use this computer's location</button></div>
+        <label>Location of the connected tower <span id="dTowerName"></span>
+          <input id="dTower" placeholder="latitude, longitude" autocomplete="off"></label>
+        <div class="sub" id="dHelp" style="margin-top:6px"></div>
+        <div class="btns"><button class="linkbtn" id="dSave" type="button">Save</button><span class="sub" id="dMsg" role="status"></span></div>
+      </details>
+    </div>
+  </section>
+
+  <div class="filters">
+    <span class="lab">Time range</span>
+    <div class="seg" id="ranges" role="group" aria-label="Time range">
+      <button data-r="900" aria-pressed="true">15 min</button>
+      <button data-r="3600" aria-pressed="false">1 hour</button>
+      <button data-r="21600" aria-pressed="false">6 hours</button>
+      <button data-r="86400" aria-pressed="false">24 hours</button>
+    </div>
+    <button class="linkbtn" id="tableBtn" aria-expanded="false">Show data table</button>
+  </div>
+
+  <figure class="card" id="figRsrp">
+    <div class="head"><div><h2>Signal strength by tower</h2><div class="sub">RSRP in dBm. The strip underneath shows which tower was connected.</div></div><div class="legend" id="legRsrp"></div></div>
+    <svg id="svgRsrp" role="img" aria-label="Signal strength by tower over time"></svg>
+    <div class="empty" id="emptyRsrp" style="display:none">Collecting readings…</div>
+    <div class="tip" id="tipRsrp"></div>
+  </figure>
+
+  <figure class="card" id="figSinr">
+    <div class="head"><div><h2>Signal quality of the connected tower</h2><div class="sub">SINR in dB. Below 0 means more noise than signal.</div></div></div>
+    <svg id="svgSinr" role="img" aria-label="Signal quality of the connected tower over time"></svg>
+    <div class="empty" id="emptySinr" style="display:none">Collecting readings…</div>
+    <div class="tip" id="tipSinr"></div>
+  </figure>
+
+  <figure class="card" id="figSpeed">
+    <div class="head"><div><h2>Download and upload speed</h2><div class="sub">Mbps passing through the mobile link, all devices together. This is the traffic in use, not the most the line can carry.</div></div><div class="legend" id="legSpeed"></div></div>
+    <svg id="svgSpeed" role="img" aria-label="Download and upload speed over time"></svg>
+    <div class="empty" id="emptySpeed" style="display:none">Collecting readings…</div>
+    <div class="tip" id="tipSpeed"></div>
+  </figure>
+
+  <div class="card datatable" id="dataTable"><div class="tablewrap"><table><thead id="dtHead"></thead><tbody id="dtBody"></tbody></table></div></div>
+
+  <div class="card">
+    <h2>Events</h2>
+    <div class="sub">Tower switches and internet drops, newest first.</div>
+    <div class="events" id="events"></div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</main>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <h2 id="dlgTitle"></h2>
+  <ul id="dlgList"></ul>
+  <div class="btns"><button class="btn" id="dlgCancel" type="button">Cancel</button><button class="btn primary" id="dlgOk" type="button"></button></div>
+</dialog>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+let range = 900, data = null, timer = null;
+let pendingOk = null, hiddenAction = null;   // what the open dialog will do; the finished action the user dismissed
+const busy = () => !!(data && data.action && data.action.state === "running");
+const canAct = () => !!(data && data.router.ok === true && !busy());
+
+function el(tag, attrs, text) {
+  const e = document.createElement(tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+function svg(tag, attrs, text) {
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+const slotColor = pci => {
+  const i = data && data.slots[String(pci)];
+  return (i !== undefined && i < 8) ? `var(--s${i + 1})` : "var(--other)";
+};
+const fmtTime = (t, secs) => new Date(t * 1000).toLocaleTimeString([], secs ? {hour: "2-digit", minute: "2-digit", second: "2-digit"} : {hour: "2-digit", minute: "2-digit"});
+const fmtDur = s => s == null ? "–" : s < 90 ? `${Math.round(s)} s` : s < 5400 ? `${Math.round(s / 60)} min` : `${(s / 3600).toFixed(1)} h`;
+const fmtNum = (v, d = 0) => v == null ? "–" : Number(v).toFixed(d);
+const fmtSpeed = v => v == null ? "–" : Number(v).toFixed(v < 10 ? 2 : 1);   // Mbps
+const rangeLabel = () => ({900: "last 15 min", 3600: "last hour", 21600: "last 6 hours", 86400: "last 24 hours"})[range];
+
+/* Quality bands: common LTE rules of thumb. level drives the status colour, always paired with a word. */
+const BANDS = {
+  rsrp: {min: -125, max: -70, unit: "dBm", name: "Strength (RSRP)", cuts: [[-80, "Excellent", "good"], [-90, "Good", "good"], [-100, "Fair", "warning"], [-110, "Poor", "serious"], [-999, "Very poor", "critical"]]},
+  rsrq: {min: -22, max: -5, unit: "dB", name: "Quality (RSRQ)", cuts: [[-10, "Excellent", "good"], [-15, "Good", "good"], [-19, "Fair", "warning"], [-999, "Poor", "serious"]]},
+  sinr: {min: -10, max: 25, unit: "dB", name: "Signal vs noise (SINR)", cuts: [[20, "Excellent", "good"], [13, "Good", "good"], [0, "Fair", "warning"], [-5, "Poor", "serious"], [-999, "Very poor", "critical"]]},
+};
+const MARK = {good: "✓", warning: "!", serious: "▲", critical: "✕"};
+function grade(kind, v) {
+  if (v == null) return null;
+  for (const [cut, label, level] of BANDS[kind].cuts) if (v >= cut) return {label, level};
+  return null;
+}
+function meter(host, kind, v, digits) {
+  const b = BANDS[kind], g = grade(kind, v);
+  host.replaceChildren();
+  host.style.setProperty("--fill", g ? `var(--${g.level})` : "var(--muted)");
+  const row = el("div", {class: "row"});
+  row.append(el("span", {class: "name"}, b.name), el("span", {class: "num"}, v == null ? "–" : `${fmtNum(v, digits)} ${b.unit}`));
+  const track = el("div", {class: "track"}), fill = el("div", {class: "fill"});
+  fill.style.width = v == null ? "0" : `${Math.max(3, Math.min(100, 100 * (v - b.min) / (b.max - b.min)))}%`;
+  track.append(fill);
+  const hint = el("div", {class: "hint"});
+  if (g) hint.append(el("span", {"aria-hidden": "true"}, MARK[g.level]), el("span", null, g.label));
+  else hint.textContent = "No reading";
+  host.append(row, track, hint);
+}
+
+function setDot(dot, level) { dot.style.background = level ? `var(--${level})` : "var(--muted)"; }
+
+function renderTop() {
+  const L = data.latest, r = data.router, st = data.stats;
+  const age = r.last_ok ? data.now - r.last_ok : null;
+  setDot($("connDot"), r.ok ? "good" : r.ok === false ? "critical" : null);
+  $("connText").textContent = r.ok ? `Live · updated ${fmtTime(r.last_ok, true)}` : r.ok === false ? "Router not reachable" : "Connecting…";
+  const banner = $("banner");
+  if (r.ok === false) {
+    banner.classList.add("show");
+    $("bannerTitle").textContent = `Can't reach the router at ${data.host}`;
+    $("bannerText").textContent = `${r.error || ""} Check that this computer is on the router's network and that SSH is enabled.` + (age != null ? ` Last reading ${fmtDur(age)} ago; the values below are from then.` : "");
+  } else if (L && !L.modem_ok) {
+    banner.classList.add("show");
+    $("bannerTitle").textContent = "The modem is not answering";
+    $("bannerText").textContent = "The router is reachable but the modem returned no cell information. It may be restarting.";
+  } else banner.classList.remove("show");
+  $("subtitle").textContent = "D-Link DWR-921 LTE modem" + (data.dry_run ? " · DRY RUN: lock commands are not sent" : "");
+  if (!L) return;
+  const s = L.serving;
+  $("kTower").textContent = s ? `PCI ${s.pci}` : "None";
+  $("kTowerNote").textContent = s ? `Site ${s.enb ?? "–"}, sector ${s.sector ?? "–"} · on it for ${fmtDur(st.since_switch_s)}` : "Not attached to a tower";
+  const lossy = st.ping_loss_pct != null && st.ping_loss_pct >= 20;
+  setDot($("kNetDot"), !L.internet ? "critical" : lossy ? "warning" : "good");
+  $("kNet").textContent = !L.internet ? "Offline" : lossy ? "Online, unstable" : "Online";
+  $("kNetNote").textContent = st.ping_loss_pct == null ? "\u00a0" : `${st.ping_loss_pct}% of test packets lost in the ${rangeLabel()}`;
+  $("kDown").textContent = fmtSpeed(L.down_mbps);
+  $("kUp").textContent = fmtSpeed(L.up_mbps);
+  $("kOp").textContent = L.operator || "–";
+  $("kOpNote").textContent = [L.act, s && s.band != null ? `band ${s.band}` : null, s && s.earfcn != null ? `EARFCN ${s.earfcn}` : null, L.reg].filter(Boolean).join(" · ") || " ";
+  if (!L.lock_known) { $("kLock").textContent = "Unknown"; $("kLockNote").textContent = "Lock list not readable"; }
+  else if (!L.lock_list.length) { $("kLock").textContent = "No towers listed"; $("kLockNote").textContent = "The modem is free to choose"; }
+  else { $("kLock").textContent = L.lock_list.map(x => `PCI ${x[0]}`).join(", "); $("kLockNote").textContent = L.lock_list.length > 1 ? "Allowed towers in the modem's lock list" : "Only tower in the modem's lock list"; }
+  $("unlockBtn").style.display = L.lock_known && L.lock_list.length ? "" : "none";
+  $("unlockBtn").disabled = !canAct();
+  $("kSw").textContent = st.switches;
+  $("kSwNote").textContent = `in the ${rangeLabel()}`;
+  meter($("mRsrp"), "rsrp", s ? (s.rsrp_precise ?? s.rsrp) : null, 1);
+  meter($("mRsrq"), "rsrq", s ? s.rsrq : null, 0);
+  meter($("mSinr"), "sinr", s ? s.sinr : null, 1);
+
+  const body = $("towerRows");
+  body.replaceChildren();
+  const towers = L.towers || [];
+const known = data.known_towers || [];
+  $("towerEmpty").style.display = towers.length || known.length ? "none" : "block";
+  const strongest = towers.find(t => t.rsrp != null);
+  for (const t of towers) {
+    const tr = el("tr");
+    const name = el("td");
+    const sw = el("span", {class: "swatch"}); sw.style.background = slotColor(t.pci);
+    name.append(sw, document.createTextNode(`PCI ${t.pci}`));
+    const pingTd = el("td", {class: "n"});
+    if (t.serving) {
+      if (s && s.enb != null) name.append(el("div", {class: "site"}, `Site ${s.enb} · sector ${s.sector}`));
+      const pg = data.ping;
+      pingTd.textContent = !pg ? "–" : pg.ms == null ? "No reply" : `${pg.ms} ms`;
+      if (pg) pingTd.title = `${pg.replies} of ${pg.sent} test packets answered in the last ${fmtDur(pg.span_s || data.poll_seconds)}` + (pg.ms != null ? `; fastest ${pg.min} ms, slowest ${pg.max} ms` : "");
+    }
+    const bar = el("div", {class: "bar"});
+    bar.style.width = t.rsrp == null ? "0" : `${Math.max(3, Math.min(100, 100 * (t.rsrp + 125) / 55))}%`;
+    bar.style.background = slotColor(t.pci);
+    const barTd = el("td", {class: "barcell"}); barTd.append(bar);
+    const role = el("td");
+    role.append(document.createTextNode(t.serving ? "Connected" : "Neighbour"));
+    if (t === strongest) role.append(el("span", {class: "badge on"}, "Strongest"));
+    if ((L.lock_list || []).some(x => x[0] === t.pci && x[1] === t.earfcn)) role.append(el("span", {class: "badge"}, "In lock list"));
+    const act = el("td"), lockBtn = el("button", {class: "btn", type: "button", "data-pci": t.pci, "data-earfcn": t.earfcn, "aria-label": `Lock to PCI ${t.pci}`}, "Lock");
+    lockBtn.disabled = !canAct();
+    act.append(lockBtn);
+    tr.append(name, el("td", {class: "n"}, t.earfcn), el("td", {class: "n"}, t.rsrp == null ? "–" : `${fmtNum(t.rsrp, 1)} dBm`), barTd, el("td", {class: "n"}, t.rsrq == null ? "–" : `${fmtNum(t.rsrq, 0)} dB`), pingTd, role, act);
+    body.append(tr);
+  }
+  // Towers seen earlier but not in sight now, so one can still be picked while the modem has no service.
+  for (const k of known) {
+    const tr = el("tr", {class: "old"}), name = el("td");
+    const sw = el("span", {class: "swatch"}); sw.style.background = slotColor(k.pci);
+    name.append(sw, document.createTextNode(`PCI ${k.pci}`));
+    const act = el("td"), lockBtn = el("button", {class: "btn", type: "button", "data-pci": k.pci, "data-earfcn": k.earfcn, "aria-label": `Lock to PCI ${k.pci}`}, "Lock");
+    lockBtn.disabled = !canAct();
+    act.append(lockBtn);
+    tr.append(name, el("td", {class: "n"}, k.earfcn), el("td", {class: "n"}, `${fmtNum(k.rsrp, 1)} dBm`), el("td", {class: "barcell"}), el("td", {class: "n"}, "–"), el("td"),
+      el("td", null, `${k.served ? "Used before, seen" : "Seen"} ${data.now - k.t < 43200 ? fmtTime(k.t, false) : fmtDur(data.now - k.t) + " ago"}`), act);
+    body.append(tr);
+  }
+
+  const ev = $("events");
+  ev.replaceChildren();
+  if (!data.events.length) ev.append(el("div", {class: "muted"}, "Nothing yet. Tower switches and internet drops will be listed here."));
+  for (const e of data.events) {
+    const row = el("div");
+    row.append(el("time", null, new Date(e.t * 1000).toLocaleString([], {month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit"})), el("span", null, e.text));
+    ev.append(row);
+  }
+  $("foot").textContent = `Reads the modem and the router's traffic counters every ${data.poll_seconds} s and keeps a log in tower_log.csv. ${st.samples} readings in the ${rangeLabel()}. The modem is only changed when you press Lock or Remove lock; each change is recorded in lock_actions.log.`;
+}
+
+/* ------------------------------------------------------------ lock / unlock */
+function renderAction() {
+  const a = data.action, card = $("action");
+  const show = !!a && a.state !== "idle" && hiddenAction !== a.started;
+  card.classList.toggle("show", show);
+  if (!show) return;
+  const running = a.state === "running";
+  const what = a.kind === "lock" ? `Locking to PCI ${a.target.pci}` : "Removing the tower lock";
+  card.classList.toggle("ok", a.state === "done");
+  card.classList.toggle("bad", a.state === "failed");
+  $("actTitle").textContent = (data.dry_run ? "Dry run. " : "") + (running ? `${what}…` : a.result);
+  $("actNote").textContent = running
+    ? `Started ${fmtTime(a.started, true)}. This page keeps working while the internet is down.` + " Follow the newest line below."
+    : `${what}: finished ${fmtTime(a.ended, true)}, after ${fmtDur(a.ended - a.started)}.`;
+  $("actHide").style.display = running ? "none" : "";
+  const list = $("actSteps"), atEnd = list.scrollTop + list.clientHeight >= list.scrollHeight - 4, had = list.childElementCount;
+  list.replaceChildren();
+  for (const st of a.steps) {
+    const li = el("li");
+    li.append(el("time", null, fmtTime(st.t, true)), el("span", null, st.text));
+    list.append(li);
+  }
+  if (atEnd || a.steps.length !== had) list.scrollTop = list.scrollHeight;
+}
+function openDialog(title, items, okLabel, onOk) {
+  $("dlgTitle").textContent = title;
+  $("dlgList").replaceChildren(...items.map(t => el("li", null, t)));
+  $("dlgOk").textContent = okLabel;
+  pendingOk = onOk;
+  $("dlg").showModal();
+}
+async function send(path, body) {
+  try {
+    const res = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    if (!res.ok) throw new Error(res.status === 409 ? await res.text() : "Tower Monitor did not accept the request.");
+    hiddenAction = null;
+  } catch (e) {
+    openDialog("That didn't start", [e instanceof TypeError ? "The Tower Monitor app is not running." : e.message], "OK", null);
+  }
+  refresh();
+}
+function askLock(pci, earfcn) {
+  const L = data.latest || {}, s = L.serving, t = (L.towers || []).find(x => x.pci === pci && x.earfcn === earfcn);
+  const mins = Math.round(data.revert_after / 60), items = [];
+  const old = t ? null : (data.known_towers || []).find(x => x.pci === pci && x.earfcn === earfcn);
+  if (old) items.push(`The modem cannot see PCI ${pci} right now. It was last seen at ${fmtTime(old.t, false)} with ${fmtNum(old.rsrp, 1)} dBm.` + (s && (s.rsrp_precise ?? s.rsrp) - old.rsrp >= 3 ? ` That is ${Math.round((s.rsrp_precise ?? s.rsrp) - old.rsrp)} dB weaker than PCI ${s.pci}, the tower you are on.` : ""));
+  if (t && t.serving) items.push("You are already on this tower. Locking stops the modem from moving to another one.");
+  else if (t && s && t.rsrp != null) {
+    const gap = (s.rsrp_precise ?? s.rsrp) - t.rsrp;
+    if (gap >= 3) items.push(`PCI ${pci} is ${Math.round(gap)} dB weaker here than PCI ${s.pci}, the tower you are on${earfcn === s.earfcn ? ", and it uses the same frequency, so PCI " + s.pci + " will act as noise on top of it" : ""}. Expect a slower, less stable connection.`);
+  }
+  items.push("The lock starts only when the router is restarted. After you confirm, the page asks you to restart the router; the internet is down for about 2 minutes while it restarts.");
+  items.push("If the modem cannot connect to this tower after the restart, Tower Monitor switches the lock off again after about 2 minutes and asks for one more restart.");
+  items.push("New way of locking, first real test: it is not yet known whether the modem keeps the lock through a router restart. The page will say what it finds.");
+  openDialog(`Lock to PCI ${pci}?`, items, `Lock to PCI ${pci}`, () => send("/api/lock", {pci, earfcn}));
+}
+$("towerRows").addEventListener("click", ev => {
+  const b = ev.target.closest("button[data-pci]");
+  if (b && !b.disabled) askLock(+b.dataset.pci, +b.dataset.earfcn);
+});
+$("unlockBtn").addEventListener("click", () => openDialog("Remove the tower lock?", [
+  "The lock is switched off in the modem, then the page asks you to restart the router. The internet is down for about 2 minutes while it restarts.",
+  "Afterwards the modem chooses the tower by itself again."], "Remove lock", () => send("/api/unlock", {})));
+$("dlgCancel").addEventListener("click", () => $("dlg").close());
+$("dlgOk").addEventListener("click", () => { const f = pendingOk; pendingOk = null; $("dlg").close(); if (f) f(); });
+$("actHide").addEventListener("click", () => { hiddenAction = data.action.started; renderAction(); });
+
+/* ---------------------------------------------------------------- line chart */
+function niceTicks(lo, hi, target) {
+  const span = Math.max(hi - lo, 1e-6), raw = span / target, pow = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 5, 10].map(m => m * pow).find(s => s >= raw) || 10 * pow;
+  const t0 = Math.floor(lo / step) * step, t1 = Math.ceil(hi / step) * step, out = [];
+  for (let v = t0; v <= t1 + step / 2; v += step) out.push(Math.round(v * 100) / 100);
+  return out;
+}
+function drawChart(opts) {
+  const {svgEl, tipEl, emptyEl, series, hist, unit, strip, zeroLine, fromZero, digits = 1} = opts;
+  const W = Math.max(320, svgEl.parentElement.clientWidth - 32), plotH = 200, stripH = strip ? 22 : 0;
+  const m = {l: 44, r: 62, t: 10, b: 24}, H = m.t + plotH + stripH + m.b;
+  svgEl.replaceChildren();
+  const vals = series.flatMap(s => s.values.filter(v => v != null));
+  if (!vals.length) { svgEl.style.display = "none"; emptyEl.style.display = "block"; tipEl.style.display = "none"; return; }
+  svgEl.style.display = "block"; emptyEl.style.display = "none";
+  svgEl.setAttribute("viewBox", `0 0 ${W} ${H}`); svgEl.setAttribute("height", H);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (zeroLine) { lo = Math.min(lo, 0); hi = Math.max(hi, 0); }
+  if (fromZero) { lo = 0; hi = Math.max(hi, 0.5); }   // a quantity that cannot go below zero
+  else if (hi - lo < 4) { lo -= 2; hi += 2; }
+  const ticks = niceTicks(lo, hi, 4); lo = ticks[0]; hi = ticks[ticks.length - 1];
+  const t0 = hist[0].t, t1 = hist[hist.length - 1].t, pw = W - m.l - m.r;
+  const x = t => m.l + pw * (t - t0) / Math.max(1, t1 - t0), y = v => m.t + plotH * (1 - (v - lo) / (hi - lo));
+  for (const v of ticks) {
+    svgEl.append(svg("line", {x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 && zeroLine ? "var(--axis)" : "var(--grid)", "stroke-width": 1}));
+    svgEl.append(svg("text", {x: m.l - 8, y: y(v) + 4, "text-anchor": "end"}, v));
+  }
+  const nx = Math.max(2, Math.min(6, Math.floor(pw / 110)));
+  for (let i = 0; i <= nx; i++) {
+    const t = t0 + (t1 - t0) * i / nx;
+    svgEl.append(svg("text", {x: x(t), y: H - 6, "text-anchor": i === 0 ? "start" : i === nx ? "end" : "middle"}, fmtTime(t, false)));
+  }
+  svgEl.append(svg("line", {x1: m.l, x2: W - m.r, y1: m.t + plotH, y2: m.t + plotH, stroke: "var(--axis)", "stroke-width": 1}));
+
+  const ends = [];
+  for (const s of series) {
+    let d = "", pen = false, last = null;
+    s.values.forEach((v, i) => {
+      if (v == null) { pen = false; return; }
+      d += `${pen ? "L" : "M"}${x(hist[i].t).toFixed(1)},${y(v).toFixed(1)}`; pen = true; last = i;
+    });
+    if (last == null) continue;
+    svgEl.append(svg("path", {d, fill: "none", stroke: s.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round"}));
+    s.values.forEach((v, i) => {   // a reading with no neighbour on either side has no line to sit on
+      if (v != null && i !== last && s.values[i - 1] == null && s.values[i + 1] == null)
+        svgEl.append(svg("circle", {cx: x(hist[i].t), cy: y(v), r: 2, fill: s.color}));
+    });
+    ends.push({s, cx: x(hist[last].t), cy: y(s.values[last]), fresh: last >= hist.length - 3});
+  }
+  ends.sort((a, b) => a.cy - b.cy);
+  const fresh = ends.filter(e => e.fresh);
+  for (const e of ends) {
+    svgEl.append(svg("circle", {cx: e.cx, cy: e.cy, r: 4, fill: e.s.color, stroke: "var(--surface)", "stroke-width": 2}));
+    const crowded = fresh.some(o => o !== e && Math.abs(o.cy - e.cy) < 14);   // the legend names the crowded ones
+    if (e.fresh && !crowded && e.s.label) svgEl.append(svg("text", {x: e.cx + 9, y: e.cy + 4, class: "lbl"}, e.s.label));
+  }
+
+  if (strip) {
+    const sy = m.t + plotH + 8, bw = pw / hist.length;
+    let run = null;
+    const flush = () => {
+      if (!run) return;
+      const r = svg("rect", {x: (m.l + run.i0 * bw + 1).toFixed(1), y: sy, width: Math.max(1, (run.i1 - run.i0 + 1) * bw - 2).toFixed(1), height: 8, rx: 4, fill: slotColor(run.pci)});
+      svgEl.append(r); run = null;
+    };
+    hist.forEach((h, i) => {
+      if (h.s == null) { flush(); return; }
+      if (run && run.pci === h.s) run.i1 = i; else { flush(); run = {pci: h.s, i0: i, i1: i}; }
+    });
+    flush();
+  }
+
+  const cross = svg("line", {y1: m.t, y2: m.t + plotH, stroke: "var(--axis)", "stroke-width": 1, visibility: "hidden"});
+  const dots = series.map(s => svg("circle", {r: 4, fill: s.color, stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden"}));
+  const hit = svg("rect", {x: m.l, y: m.t, width: pw, height: plotH + stripH, fill: "transparent", tabindex: 0, "aria-label": "Chart area. Move the pointer or use the left and right arrow keys to read values."});
+  svgEl.append(cross, ...dots, hit);
+  let idx = null;
+  const show = i => {
+    idx = Math.max(0, Math.min(hist.length - 1, i));
+    const h = hist[idx], cx = x(h.t);
+    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
+    tipEl.replaceChildren(el("div", {class: "when"}, fmtTime(h.t, true)));
+    let any = false;
+    series.forEach((s, k) => {
+      const v = s.values[idx];
+      if (v == null) { dots[k].setAttribute("visibility", "hidden"); return; }
+      any = true;
+      dots[k].setAttribute("cx", cx); dots[k].setAttribute("cy", y(v)); dots[k].setAttribute("visibility", "visible");
+      const r = el("div", {class: "r"}), key = el("span", {class: "key"}); key.style.background = s.color;
+      r.append(key, el("b", null, `${fmtNum(v, digits)} ${unit}`), el("span", {class: "nm"}, s.name));
+      tipEl.append(r);
+    });
+    if (!any) tipEl.append(el("div", {class: "muted"}, "No reading"));
+    if (strip && h.s != null) tipEl.append(el("div", {class: "when", style: "margin:4px 0 0"}, `Connected: PCI ${h.s}${h.net === false ? " · internet down" : ""}`));
+    tipEl.style.display = "block";
+    const box = svgEl.getBoundingClientRect(), fig = svgEl.parentElement.getBoundingClientRect(), scale = box.width / W;
+    let left = box.left - fig.left + cx * scale + 12;
+    if (left + tipEl.offsetWidth > fig.width - 8) left = box.left - fig.left + cx * scale - tipEl.offsetWidth - 12;
+    tipEl.style.left = `${Math.max(4, left)}px`; tipEl.style.top = `${box.top - fig.top + m.t}px`;
+  };
+  const hide = () => { cross.setAttribute("visibility", "hidden"); dots.forEach(d => d.setAttribute("visibility", "hidden")); tipEl.style.display = "none"; idx = null; };
+  hit.addEventListener("pointermove", ev => {
+    const box = svgEl.getBoundingClientRect(), px = (ev.clientX - box.left) * W / box.width;
+    show(Math.round((px - m.l) / pw * (hist.length - 1)));
+  });
+  hit.addEventListener("pointerleave", hide);
+  hit.addEventListener("focus", () => show(idx ?? hist.length - 1));
+  hit.addEventListener("blur", hide);
+  hit.addEventListener("keydown", ev => {
+    if (ev.key === "ArrowLeft") { show((idx ?? hist.length) - 1); ev.preventDefault(); }
+    if (ev.key === "ArrowRight") { show((idx ?? -1) + 1); ev.preventDefault(); }
+  });
+}
+
+function renderCharts() {
+  const hist = data.history;
+  // Many weak towers flicker in and out of view. Chart the ones that were connected plus the most
+  // often seen, five at most; the rest stay in the log but would only clutter the chart.
+  const seen = Object.keys(data.slots).filter(p => hist.some(h => h.r[p] != null));
+  const count = p => hist.reduce((n, h) => n + (h.r[p] != null ? 1 : 0), 0);
+  const served = new Set(hist.filter(h => h.s != null).map(h => String(h.s)));
+  const ranked = seen.slice().sort((a, b) => (served.has(b) - served.has(a)) || (count(b) - count(a)));
+  const pcis = ranked.slice(0, Math.max(5, served.size)).sort((a, b) => data.slots[a] - data.slots[b]);
+  const hidden = seen.length - pcis.length;
+  const leg = $("legRsrp");
+  leg.replaceChildren();
+  for (const p of pcis) {
+    const item = el("span"), sw = el("span", {class: "swatch"}); sw.style.background = slotColor(p);
+    const share = data.stats.tower_share[p];
+    item.append(sw, document.createTextNode(`PCI ${p}${share != null ? ` · connected ${share}% of the time` : ""}`));
+    leg.append(item);
+  }
+  if (hidden > 0) leg.append(el("span", {class: "muted"}, `+${hidden} weaker tower${hidden > 1 ? "s" : ""} seen briefly, not charted`));
+  drawChart({svgEl: $("svgRsrp"), tipEl: $("tipRsrp"), emptyEl: $("emptyRsrp"), hist, unit: "dBm", strip: true,
+    series: pcis.map(p => ({name: `PCI ${p}`, label: `PCI ${p}`, color: slotColor(p), values: hist.map(h => h.r[p] ?? null)}))});
+  drawChart({svgEl: $("svgSinr"), tipEl: $("tipSinr"), emptyEl: $("emptySinr"), hist, unit: "dB", zeroLine: true,
+    series: [{name: "SINR", label: "", color: "var(--s1)", values: hist.map(h => h.sinr)}]});
+  const speedSeries = [{name: "Download", label: "Download", color: "var(--s1)", values: hist.map(h => h.down ?? null)},
+                       {name: "Upload", label: "Upload", color: "var(--s2)", values: hist.map(h => h.up ?? null)}];
+  const legS = $("legSpeed");
+  legS.replaceChildren();
+  for (const [sr, avg, top] of [[speedSeries[0], data.stats.down_avg, data.stats.down_max], [speedSeries[1], data.stats.up_avg, data.stats.up_max]]) {
+    const item = el("span"), sw = el("span", {class: "swatch"}); sw.style.background = sr.color;
+    item.append(sw, document.createTextNode(`${sr.name}${avg != null ? ` · average ${fmtSpeed(avg)}, highest ${fmtSpeed(top)} Mbps` : ""}`));
+    legS.append(item);
+  }
+  drawChart({svgEl: $("svgSpeed"), tipEl: $("tipSpeed"), emptyEl: $("emptySpeed"), hist, unit: "Mbps", fromZero: true, digits: 2, series: speedSeries});
+
+  const head = $("dtHead"), body = $("dtBody");
+  head.replaceChildren(); body.replaceChildren();
+  const hr = el("tr");
+  hr.append(el("th", null, "Time"), el("th", null, "Connected"), ...pcis.map(p => el("th", {class: "n"}, `PCI ${p} (dBm)`)), el("th", {class: "n"}, "SINR (dB)"), el("th", {class: "n"}, "Download (Mbps)"), el("th", {class: "n"}, "Upload (Mbps)"), el("th", null, "Internet"));
+  head.append(hr);
+  const rows = hist.filter(h => h.s != null || Object.keys(h.r).length).slice(-200).reverse();
+  for (const h of rows) {
+    const tr = el("tr");
+    tr.append(el("td", null, fmtTime(h.t, true)), el("td", null, h.s == null ? "–" : `PCI ${h.s}`), ...pcis.map(p => el("td", {class: "n"}, fmtNum(h.r[p], 1))), el("td", {class: "n"}, fmtNum(h.sinr, 1)), el("td", {class: "n"}, fmtNum(h.down, 2)), el("td", {class: "n"}, fmtNum(h.up, 2)), el("td", null, h.net == null ? "–" : h.net ? "Online" : "Offline"));
+    body.append(tr);
+  }
+}
+
+/* ------------------------------------------------------------------ distance */
+const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
+const rad = d => d * Math.PI / 180;
+function parseLL(txt) {
+  const m = /^\s*(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)\s*$/.exec(txt || "");
+  if (!m || Math.abs(+m[1]) > 90 || Math.abs(+m[2]) > 180) return null;
+  return {lat: +m[1], lon: +m[2]};
+}
+function distanceKm(a, b) {
+  const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+function bearingDeg(a, b) {
+  const y = Math.sin(rad(b.lon - a.lon)) * Math.cos(rad(b.lat));
+  const x = Math.cos(rad(a.lat)) * Math.sin(rad(b.lat)) - Math.sin(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.cos(rad(b.lon - a.lon));
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+let formCell;   // the tower the form was last filled for, so typing is never overwritten by a refresh
+function renderDistance() {
+  const s = data.latest && data.latest.serving, loc = data.locations || {towers: {}};
+  const cid = s && s.cell_id != null ? String(s.cell_id) : null, me = loc.me, tw = cid ? loc.towers[cid] : null;
+  $("dTowerName").textContent = s ? `(PCI ${s.pci}, site ${s.enb})` : "";
+  $("dHelp").textContent = s ? `To find it, look up site ${s.enb} of ${data.latest.operator || "your operator"} (cell ID ${s.cell_id}, area code ${s.tac}) on a tower map such as cellmapper.net, then copy the tower's coordinates here.${(data.lookup || {}).enabled ? "" : " To have it looked up automatically, put your OpenCelliD key in config.json and restart Tower Monitor."}` : "";
+  const formKey = `${cid}|${tw ? tw.lat : ""}`;
+  if (formCell !== formKey && document.activeElement !== $("dTower") && document.activeElement !== $("dMe")) {
+    formCell = formKey;
+    $("dMe").value = me ? `${me.lat}, ${me.lon}` : "";
+    $("dTower").value = tw ? `${tw.lat}, ${tw.lon}` : "";
+    if (!me || !tw) $("dSet").open = true;
+  }
+  if (!s) { $("dVal").textContent = "–"; $("dNote").textContent = "Not connected to a tower."; return; }
+  if (me && tw) {
+    const km = distanceKm(me, tw), br = bearingDeg(me, tw);
+    $("dVal").textContent = km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(km < 10 ? 2 : 1)} km`;
+    const src = tw.source === "opencellid" ? ` The tower's position comes from OpenCelliD and is an estimate${tw.range_m ? ` (give or take about ${tw.range_m} m)` : ""}.` : " Calculated from the two saved locations, so it is as accurate as they are.";
+    $("dNote").textContent = `The tower is to the ${COMPASS[Math.round(br / 45) % 8]} of you (compass bearing ${Math.round(br)}°).${src}`;
+  } else {
+    $("dVal").textContent = "–";
+    $("dNote").textContent = !me && !tw ? "Add your location and this tower's location to see the distance and direction."
+      : !me ? "Add your location to see the distance." : `No location saved yet for this tower (PCI ${s.pci}).`;
+    const lk = data.lookup || {};
+    if (!tw && lk.text) $("dNote").textContent += ` ${lk.text}`;
+  }
+}
+$("dGeo").addEventListener("click", () => {
+  if (!navigator.geolocation) { $("dMsg").textContent = "This browser can't provide a location. Type the coordinates instead."; return; }
+  $("dMsg").textContent = "Asking the browser for your location…";
+  navigator.geolocation.getCurrentPosition(
+    p => { $("dMe").value = `${p.coords.latitude.toFixed(5)}, ${p.coords.longitude.toFixed(5)}`; $("dMsg").textContent = `Found (accurate to about ${Math.round(p.coords.accuracy)} m). Press Save to keep it.`; },
+    () => { $("dMsg").textContent = "The browser didn't share a location. Type the coordinates instead."; },
+    {enableHighAccuracy: true, timeout: 15000});
+});
+$("dSave").addEventListener("click", async () => {
+  const meTxt = $("dMe").value.trim(), twTxt = $("dTower").value.trim();
+  const me = meTxt ? parseLL(meTxt) : null, tw = twTxt ? parseLL(twTxt) : null;
+  if ((meTxt && !me) || (twTxt && !tw)) { $("dMsg").textContent = "Use the form: latitude, longitude (for example 31.5017, 34.4668)."; return; }
+  const body = {me};
+  const s = data && data.latest && data.latest.serving;
+  if (s && s.cell_id != null) body.tower = {cell_id: s.cell_id, pos: tw};
+  try {
+    const res = await fetch("/api/locations", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    if (!res.ok) throw new Error();
+    data.locations = await res.json();
+    $("dMsg").textContent = "Saved.";
+    renderDistance();
+  } catch (e) { $("dMsg").textContent = "Couldn't save. Is Tower Monitor still running?"; }
+});
+
+async function refresh() {
+  try {
+    const res = await fetch(`/api/status?range=${range}`, {cache: "no-store"});
+    data = await res.json();
+    document.body.style.opacity = 1;
+    renderTop(); renderAction(); renderDistance(); renderCharts();
+  } catch (e) {
+    setDot($("connDot"), "critical");
+    $("connText").textContent = "Tower Monitor app is not running";
+    document.body.style.opacity = .6;
+  }
+  clearTimeout(timer);
+  timer = setTimeout(refresh, busy() ? 2000 : 1000 * ((data && data.poll_seconds) || 5));
+}
+$("ranges").addEventListener("click", ev => {
+  const b = ev.target.closest("button"); if (!b) return;
+  range = +b.dataset.r;
+  for (const x of $("ranges").children) x.setAttribute("aria-pressed", x === b);
+  refresh();
+});
+$("tableBtn").addEventListener("click", () => {
+  const on = $("dataTable").classList.toggle("show");
+  $("tableBtn").textContent = on ? "Hide data table" : "Show data table";
+  $("tableBtn").setAttribute("aria-expanded", on);
+});
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => data && renderCharts(), 150); });
+refresh();
+</script>
+</body>
+</html>

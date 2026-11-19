@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home Devices</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --text: #0b0b0b; --text2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --text: #f0efec; --text2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --s1: #3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-bottom: 16px; }
+  h1 { font-size: 20px; margin: 0; font-weight: 650; }
+  h2 { font-size: 14px; margin: 0 0 2px; font-weight: 650; }
+  a { color: var(--s1); }
+  .sub { color: var(--text2); font-size: 12.5px; }
+  #conn { margin-left: auto; font-size: 12.5px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; background: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .banner { display: none; margin-bottom: 14px; border-left: 4px solid var(--critical); }
+  .banner.show { display: block; }
+  .banner.ok { border-left-color: var(--good); }
+  .banner.work { border-left-color: var(--s1); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .tile .label { color: var(--text2); font-size: 12.5px; }
+  .tile .value { font-size: 24px; font-weight: 650; line-height: 1.25; margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  .tile .note { color: var(--text2); font-size: 12.5px; margin-top: 2px; }
+  .head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 12px; margin-bottom: 8px; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .seg button { font: inherit; font-size: 13px; color: var(--text2); background: none; border: 0; padding: 5px 12px; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button[aria-pressed="true"] { color: var(--text); font-weight: 650; background: color-mix(in srgb, var(--text) 8%, transparent); }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; color: var(--text2); font-weight: 600; font-size: 12.5px; padding: 6px 8px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
+  td { padding: 8px; border-bottom: 1px solid var(--grid); vertical-align: middle; white-space: nowrap; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.off td { color: var(--muted); }
+  .name { font-weight: 600; }
+  .meta { color: var(--text2); font-size: 12px; }
+  .act { display: flex; align-items: center; gap: 8px; min-width: 150px; }
+  .track { flex: 1; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--fill, var(--muted)) 18%, var(--surface)); overflow: hidden; min-width: 60px; }
+  .fill { height: 100%; border-radius: 4px; background: var(--fill, var(--muted)); width: 0; transition: width .4s; }
+  .lvl { font-size: 12px; color: var(--text2); width: 62px; }
+  .pill { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 9px; border: 1px solid var(--border); color: var(--text2); margin-right: 4px; }
+  .pill.limit { color: var(--text); border-color: var(--warning); }
+  .pill.block { color: #fff; background: var(--critical); border-color: var(--critical); }
+  .btns { display: flex; gap: 6px; }
+  .btn { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--text); background: var(--surface);
+         border: 1px solid var(--axis); border-radius: 7px; padding: 3px 10px; cursor: pointer; }
+  .btn:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+  .btn:disabled { color: var(--muted); border-color: var(--border); cursor: default; }
+  .btn.primary { background: var(--text); color: var(--page); border-color: var(--text); }
+  .btn.danger { color: var(--critical); }
+  .icon { font: inherit; background: none; border: 0; color: var(--muted); cursor: pointer; padding: 0 4px; font-size: 13px; }
+  .notes { color: var(--text2); font-size: 12.5px; margin-top: 12px; }
+  .notes p { margin: 6px 0; }
+  dialog { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text);
+           padding: 18px 20px; width: min(440px, calc(100vw - 32px)); font: inherit; }
+  dialog::backdrop { background: rgba(0, 0, 0, .45); }
+  dialog h2 { font-size: 16px; margin-bottom: 8px; }
+  dialog p { color: var(--text2); margin: 6px 0; }
+  dialog .row { display: flex; gap: 12px; margin-top: 10px; }
+  dialog label { flex: 1; font-size: 12.5px; color: var(--text2); }
+  dialog input { display: block; width: 100%; margin-top: 3px; font: inherit; color: var(--text); background: var(--page);
+                 border: 1px solid var(--axis); border-radius: 7px; padding: 6px 9px; }
+  dialog .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  dialog .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  dialog .foot .btn { padding: 6px 14px; font-size: 13px; }
+  .foot2 { color: var(--muted); font-size: 12px; margin-top: 18px; }
+  @media (max-width: 700px) { .hide-sm { display: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Home Devices</h1>
+    <span class="sub">Everything connected through the TP-Link router · <a href="/">Tower Monitor</a></span>
+    <span id="conn"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span></span>
+  </header>
+
+  <div class="card banner" id="banner"><strong id="bannerTitle"></strong><div class="sub" id="bannerText"></div></div>
+
+  <section class="tiles">
+    <div class="card tile"><div class="label">Whole house, download now</div><div class="value" id="tDown">–</div><div class="note" id="tDownNote">measured on the D-Link's mobile link</div></div>
+    <div class="card tile"><div class="label">Whole house, upload now</div><div class="value" id="tUp">–</div><div class="note" id="tLoss"></div></div>
+    <div class="card tile"><div class="label">Busiest device now</div><div class="value" id="tBusy" style="font-size:20px">–</div><div class="note" id="tBusyNote"></div></div>
+    <div class="card tile"><div class="label">Devices online</div><div class="value" id="tOnline">–</div><div class="note" id="tOnlineNote"></div></div>
+  </section>
+
+  <section class="card">
+    <div class="head">
+      <div><h2>Devices</h2><div class="sub">Busiest first. Updates every 10 seconds.</div></div>
+      <div class="seg" id="period" role="group" aria-label="Usage period">
+        <button data-p="today" aria-pressed="true">Today</button><button data-p="yesterday" aria-pressed="false">Yesterday</button><button data-p="7d" aria-pressed="false">7 days</button>
+      </div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr>
+        <th>Device</th>
+        <th>Activity now</th>
+        <th class="n">Download now</th>
+        <th class="n">Upload now</th>
+        <th class="n" id="hDown">Downloaded today</th>
+        <th class="n hide-sm" id="hUsed">Uploaded today</th>
+        <th class="n hide-sm" id="hActive">Active today</th>
+        <th>Status</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="rows"><tr><td colspan="9" class="sub">Loading…</td></tr></tbody>
+    </table></div>
+    <div class="notes">
+      <p><b>Download:</b> how it is measured depends on where the device is connected. <b>The computer running Tower Monitor</b> is measured exactly. For devices on the <b>TP-Link Wi-Fi</b>, the router counts the <i>packets</i> it sends to each one, not the bytes, so the speed is an estimate (marked ≈) that assumes full-size packets and is capped so the total never exceeds the whole-house download. Devices on the <b>Archer Wi-Fi or a cable</b> have no per-device download counter (–); their download is part of the “not split per device” figure on the whole-house tile. <b>Upload</b> comes from the TP-Link's traffic statistics and is exact for every device.</p>
+      <p><b>Activity now</b> is packets sent per second. A device that downloads heavily also sends many small reply packets, so this column finds busy devices on the Archer too.</p>
+      <p><b>Limit</b> sets a maximum speed for one device on the TP-Link (Bandwidth Control). This router enforces only the <i>upload</i> maximum, so the download is held down indirectly by a low upload cap; the download figure is a target, approximately kept. <b>Block</b> stops one device from reaching the internet (Access Control); it stays connected to the Wi-Fi. Both can be undone here, and nothing on the router changes until you press a button.</p>
+    </div>
+  </section>
+
+  <div class="foot2" id="foot"></div>
+</main>
+
+<dialog id="dlgLimit" aria-labelledby="limTitle">
+  <h2 id="limTitle">Limit speed</h2>
+  <p id="limText"></p>
+  <div class="presets" id="presets"></div>
+  <div class="row">
+    <label>Download, Mbit/s<input id="limDown" type="number" min="0.1" max="100" step="0.1" inputmode="decimal"></label>
+    <label>Upload, Mbit/s<input id="limUp" type="number" min="0.05" max="100" step="0.05" inputmode="decimal"></label>
+  </div>
+  <p class="sub" style="margin-top:10px" id="limHow"></p>
+  <p class="sub" style="margin-top:6px">The device is also given a fixed address on the TP-Link, so the limit stays on it.</p>
+  <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="limGo">Apply limit</button></div>
+</dialog>
+
+<dialog id="dlgConfirm" aria-labelledby="cfTitle">
+  <h2 id="cfTitle"></h2>
+  <p id="cfText"></p>
+  <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="cfGo"></button></div>
+</dialog>
+
+<dialog id="dlgName" aria-labelledby="nmTitle">
+  <h2 id="nmTitle">Name this device</h2>
+  <p id="nmText"></p>
+  <label>Name<input id="nmInput" maxlength="40" placeholder="for example: Ahmad's phone"></label>
+  <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="nmGo">Save</button></div>
+</dialog>
+
+<script>
+const $ = id => document.getElementById(id);
+let DATA = null, PERIOD = "today", lastOk = 0;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function fmtRate(bps) {
+  if (bps == null) return "–";
+  if (bps >= 1e6) return (bps / 1e6).toFixed(bps >= 1e7 ? 0 : 1) + " Mbit/s";
+  if (bps >= 1e3) return Math.round(bps / 1e3) + " kbit/s";
+  return bps > 0 ? "< 1 kbit/s" : "0";
+}
+function fmtBytes(b) {
+  if (!b) return "0";
+  if (b >= 1e9) return (b / 1e9).toFixed(2) + " GB";
+  if (b >= 1e6) return (b / 1e6).toFixed(b >= 1e8 ? 0 : 1) + " MB";
+  return Math.round(b / 1e3) + " kB";
+}
+function fmtDur(s) {
+  if (!s) return "0";
+  const m = Math.round(s / 60);
+  return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + (m % 60) + " min";
+}
+function level(pps) {
+  if (pps < 3) return ["Idle", "var(--muted)"];
+  if (pps < 40) return ["Light", "var(--good)"];
+  if (pps < 150) return ["Busy", "var(--warning)"];
+  return ["Very busy", "var(--critical)"];
+}
+function downCell(d) {
+  if (d.down_src == null || d.down_bps == null) return '<span class="sub">–</span>';
+  return (d.down_src === "estimate" && d.down_bps > 0 ? "≈ " : "") + fmtRate(d.down_bps);
+}
+function downTitle(d) {
+  if (d.down_src === "measured") return "measured exactly on this computer's network interface (includes traffic inside the house)";
+  if (d.down_src === "estimate") return "estimate: " + (d.down_pps == null ? "–" : d.down_pps.toFixed(0)) +
+    " packets/s received over the TP-Link Wi-Fi; average over 5 min ≈ " + fmtRate(d.down_bps_5m);
+  return "not measurable: this device is on the Archer Wi-Fi or a cable, where nothing counts its download";
+}
+function dayKey(offset) {
+  const d = new Date(Date.now() - offset * 864e5);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function usage(mac) {
+  const days = PERIOD === "today" ? [dayKey(0)] : PERIOD === "yesterday" ? [dayKey(1)] : [0,1,2,3,4,5,6].map(dayKey);
+  let up = 0, act = 0, down = 0, downEst = false, hasDown = false;
+  for (const d of days) {
+    const u = (DATA.usage_days[d] || {})[mac];
+    if (u) {
+      up += u.up || 0; act += u.active_s || 0;
+      if (u.down != null) { hasDown = true; down += u.down; downEst = downEst || !!u.down_est; }
+    }
+  }
+  return {up, act, down: hasDown ? down : null, downEst};
+}
+
+function render() {
+  if (!DATA) return;
+  const devs = DATA.devices;
+  const online = devs.filter(d => d.online);
+  const link = DATA.link || {};
+  $("tDown").textContent = link.down_mbps == null ? "–" : link.down_mbps.toFixed(1) + " Mbit/s";
+  $("tUp").textContent = link.up_mbps == null ? "–" : link.up_mbps.toFixed(1) + " Mbit/s";
+  const known = online.reduce((s, d) => s + (d.down_bps || 0), 0);
+  $("tDownNote").textContent = link.down_mbps == null ? "measured on the D-Link's mobile link" :
+    "≈ " + fmtRate(Math.max(0, link.down_mbps * 1e6 - known)) + " not split per device (Archer Wi-Fi, cables)";
+  $("tLoss").textContent = link.ping_loss == null ? "" : "test packets lost (last 2 min): " + link.ping_loss + "%";
+  const busy = online.slice().sort((a, b) => b.pps - a.pps)[0];
+  if (busy && busy.pps >= 3) {
+    $("tBusy").textContent = busy.name;
+    $("tBusyNote").textContent = level(busy.pps)[0] + (busy.kind ? " · " + busy.kind : "");
+  } else { $("tBusy").textContent = "Nobody"; $("tBusyNote").textContent = "all devices are idle"; }
+  $("tOnline").textContent = online.length;
+  const lim = devs.filter(d => d.limit).length, blk = devs.filter(d => d.blocked).length;
+  $("tOnlineNote").textContent = devs.length + " known" + (lim ? " · " + lim + " limited" : "") + (blk ? " · " + blk + " blocked" : "");
+
+  const lbl = {today: "today", yesterday: "yesterday", "7d": "7 days"}[PERIOD];
+  $("hUsed").textContent = "Uploaded " + lbl;
+  $("hDown").textContent = "Downloaded " + lbl;
+  $("hActive").textContent = "Active " + lbl;
+
+  const maxPps = Math.max(50, ...devs.map(d => d.pps || 0));
+  const rows = devs.map(d => {
+    const [lv, col] = level(d.pps || 0);
+    const u = usage(d.mac);
+    const where = [d.kind, d.wifi, d.ip].filter(Boolean).join(" · ");
+    const status = (d.blocked ? '<span class="pill block">Blocked</span>' : "") +
+      (d.limit ? `<span class="pill limit" title="maximum download / upload">Limit ${+(d.limit.down / 1000).toFixed(2)} / ${+(d.limit.up / 1000).toFixed(2)} Mbit/s</span>` : "") +
+      (!d.blocked && !d.limit ? '<span class="sub">–</span>' : "");
+    const isAP = d.kind === "Wi-Fi access point";
+    const btns = isAP ? '<span class="sub">network equipment</span>' :
+      (d.limit ? `<button class="btn" data-a="unlimit" data-m="${d.mac}">Remove limit</button>` : `<button class="btn" data-a="limit" data-m="${d.mac}">Limit…</button>`) +
+      (d.blocked ? `<button class="btn" data-a="unblock" data-m="${d.mac}">Unblock</button>` : `<button class="btn danger" data-a="block" data-m="${d.mac}">Block</button>`);
+    return `<tr class="${d.online ? "" : "off"}">
+      <td><span class="name">${esc(d.name)}</span><button class="icon" title="Rename" aria-label="Rename" data-a="rename" data-m="${d.mac}">✎</button>
+          <div class="meta">${esc(where)}${d.online ? "" : " · offline"}</div></td>
+      <td><div class="act" title="${(d.pps || 0).toFixed(0)} packets/s now, ${(d.pps_5m || 0).toFixed(0)} average over 5 min">
+          <div class="track" style="--fill:${col}"><div class="fill" style="width:${Math.min(100, 100 * (d.pps || 0) / maxPps)}%"></div></div>
+          <span class="lvl">${lv}</span></div></td>
+      <td class="n" title="${esc(downTitle(d))}">${downCell(d)}</td>
+      <td class="n">${fmtRate(d.up_bps)}</td>
+      <td class="n" title="${u.downEst ? "estimate: the TP-Link counts this device's download in packets" : ""}">${u.down == null ? '<span class="sub">–</span>' : (u.downEst ? "≈ " : "") + fmtBytes(u.down)}</td>
+      <td class="n hide-sm">${fmtBytes(u.up)}</td>
+      <td class="n hide-sm">${fmtDur(u.act)}</td>
+      <td>${status}</td>
+      <td><div class="btns">${btns}</div></td></tr>`;
+  });
+  $("rows").innerHTML = rows.join("") || '<tr><td colspan="9" class="sub">No devices seen yet.</td></tr>';
+
+  const a = DATA.action || {};
+  const b = $("banner");
+  if (DATA.error) {
+    b.className = "card banner show"; $("bannerTitle").textContent = DATA.not_set_up ? "TP-Link not set up" : "TP-Link not reachable"; $("bannerText").textContent = DATA.error;
+  } else if (a.busy) {
+    b.className = "card banner show work"; $("bannerTitle").textContent = "Changing the TP-Link…"; $("bannerText").textContent = "This takes a few seconds.";
+  } else if (a.text && Date.now() / 1000 - a.t < 30) {
+    b.className = "card banner show " + (a.ok ? "ok" : ""); $("bannerTitle").textContent = a.ok ? "Done" : "Not done"; $("bannerText").textContent = a.text;
+  } else b.className = "card banner";
+  document.querySelectorAll("[data-a=limit],[data-a=unlimit],[data-a=block],[data-a=unblock]").forEach(x => x.disabled = !!a.busy);
+
+  const arch = DATA.archer;
+  $("foot").textContent = "TP-Link read at " + (DATA.updated ? new Date(DATA.updated * 1000).toLocaleTimeString() : "–") +
+    ". Archer C20 Wi-Fi list: " + (!arch ? (DATA.archer_set_up ? "not read yet" : "not set up") : arch.ok ? "read" : "not available (" + arch.error + ")") + ".";
+}
+
+async function load() {
+  try {
+    const r = await fetch("/api/devices", {cache: "no-store"});
+    DATA = await r.json(); lastOk = Date.now();
+    $("connDot").style.background = DATA.error ? "var(--critical)" : "var(--good)";
+    $("connText").textContent = DATA.not_set_up ? "Not set up" : DATA.error ? "TP-Link not answering" : "Live";
+    render();
+  } catch (e) {
+    $("connDot").style.background = "var(--critical)"; $("connText").textContent = "Monitor not running";
+  }
+}
+
+async function post(body) {
+  const r = await fetch("/api/device", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  if (!r.ok) alert(await r.text());
+  setTimeout(load, 300); setTimeout(load, 4000); setTimeout(load, 9000);
+}
+
+const dev = mac => DATA.devices.find(d => d.mac === mac);
+let current = null;
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-a]");
+  if (t) {
+    const d = dev(t.dataset.m); if (!d) return; current = d;
+    const a = t.dataset.a;
+    if (a === "limit") {
+      $("limTitle").textContent = "Limit speed: " + d.name;
+      $("limText").textContent = "The most this device may use. The others share what is left.";
+      $("limDown").value = 1; $("limUp").value = 0.5; limHow();
+      $("dlgLimit").showModal();
+    } else if (a === "rename") {
+      $("nmText").textContent = (d.reported_name ? "The device calls itself “" + d.reported_name + "”. " : "") + "MAC " + d.mac + ", IP " + d.ip + ". Leave empty to use the device's own name.";
+      $("nmInput").value = d.name === (d.reported_name || d.ip) ? "" : d.name;
+      $("dlgName").showModal(); $("nmInput").focus();
+    } else {
+      const txt = {
+        block: ["Block " + d.name + "?", "It stays on the Wi-Fi but cannot reach the internet until you press Unblock. If it is your own computer, you will lose the internet on it.", "Block"],
+        unblock: ["Unblock " + d.name + "?", "It will be able to use the internet again.", "Unblock"],
+        unlimit: ["Remove the limit on " + d.name + "?", "It will be able to use the full speed again.", "Remove limit"],
+      }[a];
+      $("cfTitle").textContent = txt[0]; $("cfText").textContent = txt[1]; $("cfGo").textContent = txt[2];
+      $("cfGo").dataset.do = a; $("dlgConfirm").showModal();
+    }
+  }
+  if (e.target.matches("[data-close]")) e.target.closest("dialog").close();
+  const p = e.target.closest("#period button");
+  if (p) { PERIOD = p.dataset.p; document.querySelectorAll("#period button").forEach(b => b.setAttribute("aria-pressed", b === p)); render(); }
+});
+[[0.5, 0.25], [1, 0.5], [2, 1], [3, 1]].forEach(([dn, up]) => {
+  const b = document.createElement("button"); b.className = "btn"; b.type = "button";
+  b.textContent = dn + " Mbit/s"; b.onclick = () => { $("limDown").value = dn; $("limUp").value = up; limHow(); };
+  $("presets").appendChild(b);
+});
+// The TP-Link ignores the download maximum; only the upload maximum works. A low upload cap
+// holds the download down (measured: 100 kbit/s up -> ~1.4 Mbit/s down, 50 -> ~0.3-0.45).
+// Same formula as upload_cap_for() in devices.py.
+const upCap = (dnK, upK) => Math.max(50, Math.min(upK, Math.round(dnK / 12)));
+function limHow() {
+  const dn = parseFloat($("limDown").value), up = parseFloat($("limUp").value);
+  if (!(dn > 0 && up > 0)) { $("limHow").textContent = ""; return; }
+  const cap = upCap(dn * 1000, up * 1000);
+  $("limHow").textContent = "This router cannot limit download directly. To hold the download near " + dn +
+    " Mbit/s, its upload is capped at " + cap + " kbit/s (0.05 Mbit/s is the lowest that still works). " +
+    "The result is approximate: sending photos or videos will be slow, and voice/video calls are limited less.";
+}
+$("limDown").addEventListener("input", limHow); $("limUp").addEventListener("input", limHow);
+$("limGo").onclick = () => {
+  const dn = parseFloat($("limDown").value), up = parseFloat($("limUp").value);
+  if (!(dn >= 0.1 && dn <= 100 && up >= 0.05 && up <= 100)) { alert("Enter download 0.1–100 and upload 0.05–100 Mbit/s."); return; }
+  // send the upload cap the router really gets, so the page and the router agree
+  const upK = upCap(Math.round(dn * 1000), Math.round(up * 1000));
+  $("dlgLimit").close();
+  post({action: "limit", mac: current.mac, down_kbps: Math.round(dn * 1000), up_kbps: upK});
+};
+$("cfGo").onclick = () => { $("dlgConfirm").close(); post({action: $("cfGo").dataset.do, mac: current.mac}); };
+$("nmGo").onclick = () => { $("dlgName").close(); post({action: "rename", mac: current.mac, name: $("nmInput").value}); };
+$("nmInput").addEventListener("keydown", e => { if (e.key === "Enter") $("nmGo").click(); });
+
+load(); setInterval(load, 5000);
+</script>
+</body>
+</html>
