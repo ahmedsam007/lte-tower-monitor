@@ -23,14 +23,32 @@ It runs on your own computer (Windows or macOS), talks to your routers over your
 
 | | |
 |---|---|
-| Computer | Windows 10/11 or macOS, on the same network as the router |
-| Python | 3.9 or newer from [python.org](https://www.python.org/downloads/) |
-| Router | D-Link DWR-921 with **SSH turned on** (see below) |
+| Computer | macOS 11 or newer, or Windows 10/11, on the same network as the router |
+| Python | Only without the Mac app: 3.8 or newer from [python.org](https://www.python.org/downloads/) |
+| Router | D-Link DWR-921 (SSH is switched on for you during setup) |
 | Devices page (optional) | TP-Link router with the older blue web interface (tested on TL-WR841HP, firmware 3.15.2). An Archer C20 access point is supported optionally for its Wi-Fi list. |
 
 > Tested with one DWR-921 (firmware 4.0.2) and a BM806C modem. Other firmware or modems may answer differently. If a reading stays empty, please open an issue and include what the page shows.
 
 ## Install and start
+
+### Mac: the app (easiest)
+
+Nothing else to install: the app has everything inside.
+
+1. **Download** the newest `.dmg` from [Releases](../../releases/latest):
+   - `Tower-Monitor-mac-apple-silicon.dmg` for Macs with an M1, M2, M3, M4 or newer chip
+   - `Tower-Monitor-mac-intel.dmg` for older Intel Macs
+
+   Not sure? Apple menu → **About This Mac**: "Chip: Apple M…" means Apple Silicon, "Processor: Intel" means Intel.
+2. **Open the .dmg** and drag **Tower Monitor** onto **Applications**.
+3. **Open Tower Monitor** from Applications. The first time, macOS says it can't check the app (it isn't from the App Store). Press **Done**, then open **System Settings → Privacy & Security**, scroll down, and press **Open Anyway** next to Tower Monitor. You only do this once.
+4. If macOS asks to let Tower Monitor **find devices on your local network**, press **Allow**. It needs this to reach the router.
+5. **Type the router's password** on the setup page. Tower Monitor finds the router by itself, switches the router's SSH on if it's off, and opens the dashboard.
+
+Its settings and logs are kept in `~/Library/Application Support/Tower Monitor`. To change the router password later, use **Router settings** at the top of the dashboard.
+
+### Windows, or Mac without the app
 
 1. **Download** this project: the green **Code** button, then **Download ZIP**. Unzip it somewhere you'll keep it, such as Documents.
 2. **Install Python** if you don't have it, from [python.org](https://www.python.org/downloads/).
@@ -39,17 +57,18 @@ It runs on your own computer (Windows or macOS), talks to your routers over your
    - Windows: `start-windows.bat`
    - macOS: `start-mac.command`. If macOS says it can't be opened, right-click it, choose **Open**, then **Open** again. Or, in Terminal: `sh start-mac.command`.
 
-   The first start installs two small Python packages (this needs internet, one time only). It then creates `config.json` and stops.
-4. **Open `config.json`** in a text editor (Notepad, TextEdit), put in your router's password, and save.
-5. **Start it again.** Your browser opens the dashboard. Keep the black window open while you use it; closing it stops Tower Monitor.
+   The first start installs a few small Python packages (this needs internet, one time only).
+4. **Type the router's password** on the setup page that opens in your browser. Keep the black window open while you use Tower Monitor; closing it stops it.
 
-## Turn on SSH on the DWR-921
+## SSH on the DWR-921
 
-Tower Monitor reads the modem through the router's SSH login. On the router's web page (usually http://192.168.0.1), find the remote access or administration settings and enable **SSH** for the local network (LAN). The menu name depends on the firmware version. The username and password are the ones you use to log in to the router's web page.
+Tower Monitor reads the modem through the router's SSH login. The setup page switches SSH on by itself when it's off, the same as ticking **SSH** on the router's **System → Telnet/SSH** page. If that doesn't work on your firmware, the setup page shows you how to do it by hand on the router's web page (usually http://192.168.0.1). The username and password are the ones you use to log in to the router's web page.
 
 Only enable it for the LAN, never for the internet (WAN) side.
 
 ## config.json
+
+The setup page writes this file for you. Edit it only for the optional settings below.
 
 | Setting | What it is |
 |---|---|
@@ -107,9 +126,10 @@ Delete them whenever you like; Tower Monitor starts fresh.
 
 - **"Router not reachable"**: check that the computer is on the router's network, SSH is enabled, and the password in `config.json` is right. If you started and stopped Tower Monitor several times quickly, the router may refuse new SSH logins for about 5 minutes; wait and it recovers.
 - **The page loads but the readings are empty**: your modem may use a different command port. Try `/tmp/dev/ttyUSB2` for `at_port`.
+- **"No usable Python was found"**: Python is not installed, or the installer was run without "Add python.exe to PATH". Install it from python.org with that box ticked. The window lists what it did find.
 - **Installing fails with "conflicting dependencies"**: the computer has a free-threaded Python (shown as 3.13t). The packages Tower Monitor needs don't support it. `start-windows.bat` skips it when a normal Python is also installed; otherwise install the normal Python from python.org.
 - **Reinstall the packages**: delete the `.venv` folder and start again.
-- **Run it by hand**: `python3 -m pip install --only-binary=:all: -r requirements.txt`, then `python3 server.py` (Windows: `py -3` instead of `python3`).
+- **Run it by hand**: `python3 -m pip install --only-binary=:all: -r requirements.txt`, then `python3 app.py` (Windows: `py -3` instead of `python3`).
 
 ## License
 

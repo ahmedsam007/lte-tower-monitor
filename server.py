@@ -31,9 +31,11 @@ from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-LOG_PATH = os.path.join(HERE, "tower_log.csv")
-LOC_PATH = os.path.join(HERE, "locations.json")   # coordinates the user typed in; never sent anywhere
+HERE = os.path.dirname(os.path.abspath(__file__))       # program files (pages, example config)
+DATA = os.environ.get("TOWER_MONITOR_DATA") or HERE       # settings and logs; the Mac/Windows app sets its own folder
+os.makedirs(DATA, exist_ok=True)
+LOG_PATH = os.path.join(DATA, "tower_log.csv")
+LOC_PATH = os.path.join(DATA, "locations.json")   # coordinates the user typed in; never sent anywhere
 MAX_SAMPLES = 20000          # about 28 hours at one sample every 5 seconds
 MAX_BUCKETS = 360            # points sent to the page per chart
 GAP_SECONDS = 60             # a silence longer than this is reported as a gap
@@ -51,6 +53,7 @@ except ImportError:
          "or install the packages yourself:  python3 -m pip install --only-binary=:all: -r requirements.txt")
 
 import devices
+import firstrun
 
 
 def is_set(v):
@@ -59,7 +62,7 @@ def is_set(v):
 
 
 def load_config():
-    path = os.path.join(HERE, "config.json")
+    path = os.path.join(DATA, "config.json")
     if not os.path.exists(path):
         shutil.copy(os.path.join(HERE, "config.example.json"), path)
         stop(f"config.json was created at:\n  {path}\n"
@@ -71,6 +74,12 @@ def load_config():
     except ValueError as e:
         stop(f"config.json is not valid JSON ({e}).\nCheck the commas and quotes, "
              "or delete it and start again to get a fresh copy.")
+    try:      # settings missing from an older or hand-edited config.json get the example's value
+        with open(os.path.join(HERE, "config.example.json"), encoding="utf-8") as f:
+            for k, v in json.load(f).items():
+                cfg.setdefault(k, v)
+    except (OSError, ValueError):
+        pass
     if not is_set(cfg.get("password")):
         stop("Put the D-Link router's password in config.json (the \"password\" line), "
              "then start Tower Monitor again.")
@@ -80,7 +89,7 @@ def load_config():
 CFG = load_config()
 POLL = max(3, int(CFG.get("poll_seconds", 5)))
 DRY_RUN = "--dry-run" in sys.argv          # for trying the buttons: modem-changing commands are not sent
-ACTION_LOG = os.path.join(HERE, "lock_actions.log")
+ACTION_LOG = os.path.join(DATA, "lock_actions.log")
 REVERT_AFTER = max(120, int(CFG.get("lock_revert_seconds", 300)))   # no internet for this long after a lock: undo it
 RECOVER_WAIT = 300                          # how long to wait for the internet after removing a lock
 RESTART_WAIT = 900                          # how long to wait for the user to restart the router
@@ -984,6 +993,12 @@ class Handler(BaseHTTPRequestHandler):
         if u.path in ("/", "/index.html"):
             with open(os.path.join(HERE, "index.html"), "rb") as f:
                 self._send(200, "text/html; charset=utf-8", f.read())
+        elif u.path == "/setup":
+            self._send(200, "text/html; charset=utf-8", firstrun.page())
+        elif u.path.startswith("/api/setup/"):
+            if not firstrun.same_origin(self.headers):
+                return self._send(403, "text/plain", b"forbidden")
+            self._send(200, "application/json", json.dumps(firstrun.api(u.path[len("/api/setup/"):], {}, True)).encode())
         elif u.path == "/devices":
             with open(os.path.join(HERE, "devices.html"), "rb") as f:
                 self._send(200, "text/html; charset=utf-8", f.read())
@@ -1013,6 +1028,16 @@ class Handler(BaseHTTPRequestHandler):
         # Only the page itself (same machine, same origin, JSON body) may save locations or change the lock.
         host = (self.headers.get("Host") or "").split(":")[0]
         path = urlparse(self.path).path
+        if path.startswith("/api/setup/"):          # "Change router settings" from the dashboard
+            if not firstrun.same_origin(self.headers):
+                return self._send(403, "text/plain", b"forbidden")
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(n) or b"{}") if n <= 65536 else {}
+            except ValueError:
+                body = {}
+            res = firstrun.api(path[len("/api/setup/"):], body, True)
+            return self._send(200, "application/json", json.dumps(res).encode())
         if path not in ("/api/locations", "/api/lock", "/api/unlock", "/api/device") or host not in ("127.0.0.1", "localhost"):
             return self._send(404, "text/plain", b"not found")
         origin = self.headers.get("Origin")
@@ -1083,7 +1108,8 @@ def house_down_bps():
 
 
 def main():
-    signal.signal(signal.SIGTERM, lambda *a: sys.exit(0))   # so the SSH session is closed on kill too
+    if threading.current_thread() is threading.main_thread():   # the app runs this in a thread
+        signal.signal(signal.SIGTERM, lambda *a: sys.exit(0))   # so the SSH session is closed on kill too
     if not DRY_RUN:
         upgrade_log_header()
     load_log()

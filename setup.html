@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set up Tower Monitor</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --text: #0b0b0b; --text2: #52514e; --muted: #898781;
+    --border: rgba(11,11,11,0.10); --field: #ffffff; --accent: #2a78d6; --accent-text: #ffffff;
+    --good: #0ca30c; --critical: #d03b3b; --warn-bg: #fdf3e1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --text: #f0efec; --text2: #c3c2b7; --muted: #898781;
+      --border: rgba(255,255,255,0.12); --field: #222220; --accent: #3987e5; --warn-bg: #2b2414;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 520px; margin: 0 auto; padding: 40px 16px 48px; }
+  h1 { font-size: 24px; margin: 0 0 4px; font-weight: 650; }
+  .lead { color: var(--text2); margin: 0 0 24px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  label { display: block; font-weight: 600; margin: 14px 0 4px; }
+  label:first-of-type { margin-top: 0; }
+  .help { color: var(--text2); font-size: 13px; margin: 4px 0 0; }
+  input[type=text], input[type=password], select {
+    width: 100%; font: inherit; color: var(--text); background: var(--field);
+    border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .pw { position: relative; }
+  .pw input { padding-right: 64px; }
+  .pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+  button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--border);
+           background: var(--field); color: var(--text); padding: 6px 12px; }
+  button.primary { width: 100%; margin-top: 18px; background: var(--accent); color: var(--accent-text);
+                   border: 0; padding: 11px; font-weight: 600; font-size: 16px; }
+  button:disabled { opacity: .6; cursor: default; }
+  .link { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; font-size: 13px; }
+  .router { display: flex; align-items: center; gap: 12px; }
+  .router .name { font-weight: 650; }
+  .router .addr { color: var(--text2); font-size: 13px; }
+  .router .link { margin-left: auto; }
+  .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border);
+             border-top-color: var(--accent); animation: spin .8s linear infinite; flex: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .steps { list-style: none; margin: 12px 0 0; padding: 0; }
+  .steps li { display: flex; gap: 8px; align-items: center; padding: 3px 0; }
+  .ok { color: var(--good); font-weight: 700; width: 18px; text-align: center; }
+  .error { border-left: 4px solid var(--critical); }
+  .error p { margin: 0 0 8px; }
+  ol.guide { margin: 8px 0 0; padding-left: 20px; }
+  ol.guide li { margin: 4px 0; }
+  a.button { display: inline-block; margin-top: 10px; text-decoration: none; background: var(--accent);
+             color: var(--accent-text); padding: 8px 14px; border-radius: 8px; font-weight: 600; }
+  .note { color: var(--muted); font-size: 12.5px; margin-top: 20px; overflow-wrap: anywhere; }
+  .done { text-align: center; padding: 28px 20px; }
+  .done .big { font-size: 40px; color: var(--good); line-height: 1; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Set up Tower Monitor</h1>
+  <p class="lead">Connect to your D-Link router once. After that, Tower Monitor opens straight to your dashboard.</p>
+
+  <form id="form" autocomplete="off">
+    <div class="card">
+      <h2>Your router</h2>
+      <div id="searching" class="router"><div class="spinner"></div><div>Looking for your router…</div></div>
+      <div id="found" class="router" hidden>
+        <div><div class="name" id="foundName"></div><div class="addr" id="foundAddr"></div></div>
+        <button type="button" class="link" id="changeAddr">Change</button>
+      </div>
+      <div id="manual" hidden>
+        <p class="help" id="manualWhy" style="margin:0 0 8px"></p>
+        <label for="host">Router address</label>
+        <input type="text" id="host" inputmode="decimal" placeholder="192.168.0.1" spellcheck="false">
+        <p class="help" id="others"></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Router password</h2>
+      <label for="password">Password</label>
+      <div class="pw">
+        <input type="password" id="password" autocomplete="current-password" spellcheck="false">
+        <button type="button" id="showPw">Show</button>
+      </div>
+      <p class="help">The password you use to sign in to the router's web page. If you never changed it, it's printed on the sticker under the router.</p>
+      <p class="help"><button type="button" class="link" id="userToggle">Use a different username</button></p>
+      <div id="userBox" hidden>
+        <label for="user">Username</label>
+        <input type="text" id="user" value="admin" spellcheck="false">
+      </div>
+      <button type="submit" class="primary" id="go">Connect</button>
+      <div id="working" class="router" style="margin-top:14px" hidden>
+        <div class="spinner"></div><div>Connecting to the router. This can take up to a minute…</div>
+      </div>
+      <ul class="steps" id="steps"></ul>
+    </div>
+  </form>
+
+  <div class="card error" id="error" hidden>
+    <p id="errorText"></p>
+    <div id="sshGuide" hidden>
+      <p><b>Switch SSH on yourself:</b></p>
+      <ol class="guide">
+        <li>Open the router's page with the button below, and sign in.</li>
+        <li>Go to <b>System</b> → <b>Telnet/SSH</b> (on some routers: <b>Management</b> or <b>Remote access</b>).</li>
+        <li>Tick <b>SSH</b>, leave the port at 22, and press <b>Apply</b>.</li>
+        <li>Come back here and press <b>Connect</b> again.</li>
+      </ol>
+      <a class="button" id="routerPage" target="_blank" rel="noopener">Open the router's page</a>
+    </div>
+  </div>
+
+  <div class="card done" id="done" hidden>
+    <div class="big">✓</div>
+    <h2 style="font-size:18px;text-transform:none;letter-spacing:0;color:var(--text);margin:10px 0 4px">All set</h2>
+    <p class="help" id="doneText">Opening your dashboard…</p>
+  </div>
+
+  <p class="note" id="note">Your password is saved only on this computer. Tower Monitor talks to the router over your home network; nothing is sent to the internet.</p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let running = false;        // true when the dashboard is already running (setup opened again from it)
+let chosen = null;          // address of the router found automatically
+
+function showManual(why, others) {
+  $("found").hidden = true; $("searching").hidden = true; $("manual").hidden = false;
+  $("manualWhy").textContent = why || "";
+  $("others").textContent = others && others.length ? "Other devices that answered: " + others.join(", ") : "";
+}
+
+async function find() {
+  try {
+    const r = await (await fetch("/api/setup/find", {cache: "no-store"})).json();
+    const routers = r.routers || [];
+    $("searching").hidden = true;
+    if (routers.length) {
+      chosen = routers[0].ip;
+      $("host").value = chosen;
+      $("foundName").textContent = "D-Link " + routers[0].model;
+      $("foundAddr").textContent = chosen;
+      $("found").hidden = false;
+      $("password").focus();
+    } else {
+      $("host").value = r.saved_host || "192.168.0.1";
+      showManual("Tower Monitor couldn't find a D-Link router by itself. Type its address. It's usually 192.168.0.1 and is printed on the sticker under the router.", r.others);
+    }
+  } catch (e) {
+    showManual("Type the router's address. It's usually 192.168.0.1.");
+  }
+}
+
+$("changeAddr").onclick = () => showManual("", []);
+$("showPw").onclick = () => {
+  const p = $("password"); p.type = p.type === "password" ? "text" : "password";
+  $("showPw").textContent = p.type === "password" ? "Show" : "Hide";
+};
+$("userToggle").onclick = () => { $("userBox").hidden = !$("userBox").hidden; };
+
+$("form").onsubmit = async ev => {
+  ev.preventDefault();
+  $("error").hidden = true; $("steps").innerHTML = "";
+  $("go").disabled = true; $("working").hidden = false;
+  let r;
+  try {
+    const res = await fetch("/api/setup/connect", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({host: $("host").value.trim() || chosen, user: $("user").value.trim(), password: $("password").value})});
+    r = await res.json();
+  } catch (e) {
+    r = {ok: false, message: "Tower Monitor stopped answering. Close it and open it again."};
+  }
+  $("go").disabled = false; $("working").hidden = true;
+  for (const s of r.steps || []) {
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="ok">✓</span>';
+    li.append(s);
+    $("steps").append(li);
+  }
+  if (r.ok) return finished();
+  $("errorText").textContent = r.message || "Something went wrong.";
+  $("sshGuide").hidden = !(r.step === "ssh_off" || r.step === "ssh_login");
+  if (r.router_page) $("routerPage").href = r.router_page;
+  $("error").hidden = false;
+  if (r.step === "host") showManual("", []);
+  if (r.step === "password") $("password").select();
+  $("error").scrollIntoView({behavior: "smooth", block: "nearest"});
+};
+
+async function finished() {
+  $("form").hidden = true; $("error").hidden = true; $("done").hidden = false;
+  if (running) {
+    $("doneText").textContent = "Saved. Quit Tower Monitor and open it again to use the new settings.";
+    return;
+  }
+  // The dashboard starts on this same address a moment after the settings are saved.
+  for (let i = 0; i < 60; i++) {
+    await new Promise(res => setTimeout(res, 1000));
+    try {
+      const s = await (await fetch("/api/setup/status", {cache: "no-store"})).json();
+      if (s.running) { location.href = "/"; return; }
+    } catch (e) { /* restarting */ }
+  }
+  $("doneText").textContent = "Saved. If the dashboard doesn't open, close Tower Monitor and open it again.";
+}
+
+(async () => {
+  try {
+    const s = await (await fetch("/api/setup/status", {cache: "no-store"})).json();
+    running = s.running;
+    if (s.data_dir) $("note").textContent += " Settings folder: " + s.data_dir;
+  } catch (e) { /* fine */ }
+  find();
+})();
+</script>
+</body>
+</html>

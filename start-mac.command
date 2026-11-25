@@ -22,4 +22,4 @@ if [ ! -x .venv/bin/python ]; then
   fi
 fi
 
-exec .venv/bin/python server.py "$@"
+exec .venv/bin/python app.py --browser "$@"

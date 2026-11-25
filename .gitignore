@@ -17,3 +17,9 @@ __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
+
+# app builds
+build/
+dist/
+packaging/r/
+config.json.tmp

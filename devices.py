@@ -35,7 +35,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.environ.get("TOWER_MONITOR_DATA") or os.path.dirname(os.path.abspath(__file__))   # where data is kept
 USAGE_PATH = os.path.join(HERE, "device_usage.json")    # daily totals per device
 NAMES_PATH = os.path.join(HERE, "device_names.json")    # names the user typed
 ACTION_LOG = os.path.join(HERE, "device_actions.log")   # every change made to the TP-Link

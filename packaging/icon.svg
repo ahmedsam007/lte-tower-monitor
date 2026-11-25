@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4c9bf0"/>
+      <stop offset="1" stop-color="#1d5fc0"/>
+    </linearGradient>
+    <filter id="sh" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#000" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)" filter="url(#sh)"/>
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <!-- signal waves -->
+    <g stroke-width="34" opacity="0.95">
+      <path d="M392 330 a170 170 0 0 0 0 220"/>
+      <path d="M632 330 a170 170 0 0 1 0 220"/>
+    </g>
+    <g stroke-width="34" opacity="0.7">
+      <path d="M318 268 a265 265 0 0 0 0 344"/>
+      <path d="M706 268 a265 265 0 0 1 0 344"/>
+    </g>
+    <!-- mast -->
+    <g stroke-width="38">
+      <path d="M512 470 L424 800"/>
+      <path d="M512 470 L600 800"/>
+      <path d="M458 672 L566 672"/>
+      <path d="M440 740 L584 740"/>
+    </g>
+  </g>
+  <circle cx="512" cy="440" r="52" fill="#fff"/>
+</svg>

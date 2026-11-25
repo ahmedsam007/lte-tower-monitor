@@ -1,0 +1,69 @@
+# Builds the Tower Monitor Mac app (Apple Silicon and Intel) with Python and all packages inside.
+# Push a tag like v1.0.0 to publish the .dmg files on a GitHub Release; or run it by hand
+# from the Actions tab to just get the files as downloads.
+name: Build app
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15          # Apple Silicon (M1 and newer)
+            arch: apple-silicon
+          - runner: macos-15-intel    # Intel Macs
+            arch: intel
+    runs-on: ${{ matrix.runner }}
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: python -m pip install --disable-pip-version-check --only-binary=:all: -r packaging/requirements-app.txt
+
+      - name: Build the app
+        run: |
+          export TOWER_MONITOR_VERSION="${GITHUB_REF_NAME#v}"
+          case "$TOWER_MONITOR_VERSION" in [0-9]*) ;; *) export TOWER_MONITOR_VERSION="0.0.0";; esac
+          pyinstaller --noconfirm packaging/TowerMonitor.spec
+
+      - name: Check that the app starts its server
+        run: |
+          APP="dist/Tower Monitor.app/Contents/MacOS/Tower Monitor"
+          TOWER_MONITOR_DATA="$RUNNER_TEMP/tm" "$APP" --browser --no-open > "$RUNNER_TEMP/out.txt" 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -s http://127.0.0.1:8765/api/setup/status | grep -q '"needed": true'; then echo "setup page is up"; kill %1; exit 0; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/out.txt"; exit 1
+
+      - name: Make the .dmg
+        run: |
+          mkdir dmg
+          cp -R "dist/Tower Monitor.app" dmg/
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname "Tower Monitor" -srcfolder dmg -ov -format UDZO "Tower-Monitor-mac-${{ matrix.arch }}.dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tower-Monitor-mac-${{ matrix.arch }}
+          path: Tower-Monitor-mac-${{ matrix.arch }}.dmg
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Tower-Monitor-mac-${{ matrix.arch }}.dmg
