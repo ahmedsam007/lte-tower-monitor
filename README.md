@@ -107,6 +107,7 @@ Delete them whenever you like; Tower Monitor starts fresh.
 
 - **"Router not reachable"**: check that the computer is on the router's network, SSH is enabled, and the password in `config.json` is right. If you started and stopped Tower Monitor several times quickly, the router may refuse new SSH logins for about 5 minutes; wait and it recovers.
 - **The page loads but the readings are empty**: your modem may use a different command port. Try `/tmp/dev/ttyUSB2` for `at_port`.
+- **Installing fails with "conflicting dependencies"**: the computer has a free-threaded Python (shown as 3.13t). The packages Tower Monitor needs don't support it. `start-windows.bat` skips it when a normal Python is also installed; otherwise install the normal Python from python.org.
 - **Reinstall the packages**: delete the `.venv` folder and start again.
 - **Run it by hand**: `python3 -m pip install --only-binary=:all: -r requirements.txt`, then `python3 server.py` (Windows: `py -3` instead of `python3`).
 
