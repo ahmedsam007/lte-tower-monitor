@@ -160,60 +160,72 @@ class TPLink:
     def enable_statistics(self):
         self.get("SystemStatisticRpm.htm", {"interval": 10, "Staton": "Enable"})
 
+    def all_pages(self, page, parse):
+        """Every page of a list, as (items, arrays of page 1).
+
+        The paging fields differ per page (measured 2026-11-26): Bandwidth Control gives a
+        page COUNT and answers page 2 with page 1 again; Address Reservation gives a
+        "more pages" FLAG (8 per page, and there are more than 8). So pages are read until
+        one is empty, repeats the previous one, or comes back with another page number.
+        parse(arrays, page) returns (page number the router sent, items)."""
+        items, prev, first = [], None, None
+        for n in range(1, 21):
+            a = self.arrays(self.get(page, {"Page": n}))
+            if n == 1:
+                first = a
+            shown, rows = parse(a, n)
+            same = [{k: v for k, v in r.items() if k != "page"} for r in rows]
+            if (n > 1 and shown != n) or not rows or same == prev:
+                break
+            items += rows
+            prev = same
+        return items, first
+
     def reservations(self):
-        a = self.arrays(self.get("FixMapCfgRpm.htm", {"Page": 1}))
-        para, lst = a.get("DHCPStaticPara", [1, 0, 0, 3]), a.get("dhcpList", [])
-        w = para[3] or 3
-        return {norm_mac(lst[i]): lst[i + 1] for i in range(0, len(lst) - w + 1, w)}
+        def parse(a, n):
+            para, lst = a.get("DHCPStaticPara", [n, 0, 0, 3]), a.get("dhcpList", [])
+            w = para[3] or 3
+            return para[0], [{"mac": norm_mac(lst[i]), "ip": lst[i + 1]}
+                             for i in range(0, len(lst) - w + 1, w)]
+        rows, _ = self.all_pages("FixMapCfgRpm.htm", parse)
+        return {r["mac"]: r["ip"] for r in rows}
 
     def qos(self):
         """(enabled, {ip: {"id", "down", "up", "enabled"}}). Speeds in kbit/s."""
         cfg = self.arrays(self.get("QoSCfgRpm.htm")).get("QoSCfgPara", [0])
-        rules, page = {}, 1
-        while page < 20:
-            a = self.arrays(self.get("QoSRuleListRpm.htm", {"Page": page}))
-            para, lst = a.get("QoSRuleListParam", [1, 1, 0, 8]), a.get("QoSRuleListArray", [])
-            n, w = para[2], para[3] or 8
-            for i in range(n):
+
+        def parse(a, n):
+            para, lst = a.get("QoSRuleListParam", [n, 1, 0, 8]), a.get("QoSRuleListArray", [])
+            count, w = para[2], para[3] or 8
+            rows = []
+            for i in range(count):
                 r = lst[i * w:(i + 1) * w]
                 ips = re.findall(r"\d+\.\d+\.\d+\.\d+", str(r[1]))
                 if ips:
-                    rules[ips[0]] = {"id": r[0], "range": str(r[1]), "up": r[3], "down": r[5],
-                                     "enabled": bool(r[7]), "page": page}
-            if page >= para[1]:          # para[1] = number of pages
-                break
-            page += 1
-        return cfg[0] == 1, rules
+                    rows.append({"ip": ips[0], "id": r[0], "range": str(r[1]), "up": r[3],
+                                 "down": r[5], "enabled": bool(r[7]), "page": n})
+            return para[0], rows
+        rows, _ = self.all_pages("QoSRuleListRpm.htm", parse)
+        return cfg[0] == 1, {r["ip"]: r for r in rows}
 
     def access_control(self):
         """(enabled, deny_mode, hosts, rules) for Access Control."""
-        a = self.arrays(self.get("AccessCtrlAccessRulesRpm.htm", {"Page": 1}))
-        glob = a.get("access_global_cfg_dyn_array", [0, 0])
-        rules = []
-        page = 1
-        while True:
-            if page > 1:
-                a = self.arrays(self.get("AccessCtrlAccessRulesRpm.htm", {"Page": page}))
-            para, lst = a.get("access_rules_page_param", [1, 0, 0, 8]), a.get("access_rules_data_param", [])
+        def parse_rules(a, n):
+            para, lst = a.get("access_rules_page_param", [n, 0, 0, 8]), a.get("access_rules_data_param", [])
             w = para[3] or 8
-            for i in range(para[2]):
-                r = lst[i * w:(i + 1) * w]
-                rules.append({"name": r[0], "host": r[4], "enabled": bool(r[7]), "page": page, "pos": i})
-            if not para[1] or page >= 20:
-                break
-            page += 1
-        hosts, page = [], 1
-        while True:
-            a = self.arrays(self.get("AccessCtrlHostsListsRpm.htm", {"Page": page}))
-            para, lst = a.get("hosts_lists_page_param", [1, 0, 0, 5]), a.get("hosts_lists_data_param", [])
+            return para[0], [{"name": lst[i * w], "host": lst[i * w + 4], "enabled": bool(lst[i * w + 7]),
+                              "page": n, "pos": i}
+                             for i in range(para[2]) if (i + 1) * w <= len(lst)]
+
+        def parse_hosts(a, n):
+            para, lst = a.get("hosts_lists_page_param", [n, 0, 0, 5]), a.get("hosts_lists_data_param", [])
             w = para[3] or 5
-            for i in range(para[2]):
-                r = lst[i * w:(i + 1) * w]
-                hosts.append({"name": r[1], "mac": norm_mac(r[4]) if r[0] == 0 else "",
-                              "page": page, "pos": i})
-            if not para[1] or page >= 20:
-                break
-            page += 1
+            return para[0], [{"name": lst[i * w + 1], "mac": norm_mac(lst[i * w + 4]) if lst[i * w] == 0 else "",
+                              "page": n, "pos": i}
+                             for i in range(para[2]) if (i + 1) * w <= len(lst)]
+        rules, first = self.all_pages("AccessCtrlAccessRulesRpm.htm", parse_rules)
+        hosts, _ = self.all_pages("AccessCtrlHostsListsRpm.htm", parse_hosts)
+        glob = first.get("access_global_cfg_dyn_array", [0, 0])
         return glob[0] == 1, glob[1] == 0, hosts, rules
 
     # ---- changing (each one is a form the router's own pages submit)
