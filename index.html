@@ -31,9 +31,9 @@
   h2 { font-size: 14px; margin: 0 0 2px; font-weight: 650; }
   .sub { color: var(--text2); font-size: 12.5px; }
   .muted { color: var(--muted); }
-  #conn { margin-left: auto; font-size: 12.5px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+  #conn { margin-inline-start: auto; font-size: 12.5px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
-  .banner { display: none; margin-bottom: 14px; border-left: 4px solid var(--critical); }
+  .banner { display: none; margin-bottom: 14px; border-inline-start: 4px solid var(--critical); }
   .banner.show { display: block; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; margin-bottom: 12px; }
   .tile .label { color: var(--text2); font-size: 12.5px; }
@@ -57,21 +57,21 @@
   .meter .hint { color: var(--text2); font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
   .tablewrap { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
-  th { text-align: left; color: var(--text2); font-weight: 600; font-size: 12.5px; padding: 6px 8px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
+  th { text-align: start; color: var(--text2); font-weight: 600; font-size: 12.5px; padding: 6px 8px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
   td { padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: middle; white-space: nowrap; }
-  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
-  .swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 7px; }
-  .bar { height: 6px; border-radius: 0 3px 3px 0; background: var(--s1); min-width: 2px; }
+  td.n, th.n { text-align: end; font-variant-numeric: tabular-nums; }
+  .swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-inline-end: 7px; }
+  .bar { height: 6px; border-radius: 0; border-start-end-radius: 3px; border-end-end-radius: 3px; background: var(--s1); min-width: 2px; }
   .barcell { width: 70px; min-width: 50px; }
-  .site { color: var(--text2); font-size: 12px; padding-left: 21px; }
+  .site { color: var(--text2); font-size: 12px; padding-inline-start: 21px; }
   tr.old td { color: var(--text2); }
-  .badge { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 9px; border: 1px solid var(--border); color: var(--text2); margin-left: 4px; }
+  .badge { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 9px; border: 1px solid var(--border); color: var(--text2); margin-inline-start: 4px; }
   .badge.on { color: var(--text); border-color: var(--axis); font-weight: 600; }
   .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 18px 0 10px; }
   .filters .lab { color: var(--text2); font-size: 12.5px; }
   .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
   .seg button { font: inherit; font-size: 13px; color: var(--text2); background: none; border: 0; padding: 5px 12px; cursor: pointer; }
-  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button + button { border-inline-start: 1px solid var(--border); }
   .seg button[aria-pressed="true"] { color: var(--text); font-weight: 650; background: color-mix(in srgb, var(--text) 8%, transparent); }
   .linkbtn { font: inherit; font-size: 12.5px; color: var(--text2); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 3px 10px; cursor: pointer; }
   figure { margin: 0 0 12px; position: relative; }
@@ -109,10 +109,10 @@
   .btn:disabled { color: var(--muted); border-color: var(--border); cursor: default; }
   .btn.primary { background: var(--text); color: var(--page); border-color: var(--text); }
   .btn.primary:hover:not(:disabled) { background: var(--text2); }
-  .action { display: none; margin-bottom: 14px; border-left: 4px solid var(--s1); }
+  .action { display: none; margin-bottom: 14px; border-inline-start: 4px solid var(--s1); }
   .action.show { display: block; }
-  .action.ok { border-left-color: var(--good); }
-  .action.bad { border-left-color: var(--critical); }
+  .action.ok { border-inline-start-color: var(--good); }
+  .action.bad { border-inline-start-color: var(--critical); }
   .action .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
   .steps { margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; max-height: 230px; overflow-y: auto; }
   .steps li { display: flex; gap: 12px; padding: 3px 0; }
@@ -121,7 +121,7 @@
            padding: 18px 20px; max-width: min(460px, calc(100vw - 32px)); font: inherit; }
   dialog::backdrop { background: rgba(0, 0, 0, .45); }
   dialog h2 { font-size: 16px; margin-bottom: 8px; }
-  dialog ul { margin: 0; padding-left: 18px; color: var(--text2); }
+  dialog ul { margin: 0; padding-inline-start: 18px; color: var(--text2); }
   dialog li { margin: 6px 0; }
   dialog .btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
   dialog .btn { padding: 6px 14px; font-size: 13px; }
@@ -169,7 +169,7 @@
       <h2>Towers the modem can see</h2>
       <div class="sub">Strongest first. The list changes as the modem scans. Lock keeps the modem on the tower you pick. Site and ping are known only for the connected tower; ping is the middle reply time of the router's test packets in the last minute.</div>
       <div class="tablewrap"><table>
-        <thead><tr><th>Tower</th><th class="n">EARFCN</th><th class="n">Strength</th><th></th><th class="n">Quality</th><th class="n">Ping</th><th>Role</th><th><span style="position:absolute;left:-9999px">Lock</span></th></tr></thead>
+        <thead><tr><th>Tower</th><th class="n">EARFCN</th><th class="n">Strength</th><th></th><th class="n">Quality</th><th class="n">Ping</th><th>Role</th><th><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Lock</span></th></tr></thead>
         <tbody id="towerRows"></tbody>
       </table></div>
       <div class="empty" id="towerEmpty" style="display:none">No towers reported yet.</div>
@@ -245,6 +245,460 @@
   <div class="btns"><button class="btn" id="dlgCancel" type="button">Cancel</button><button class="btn primary" id="dlgOk" type="button"></button></div>
 </dialog>
 
+<!-- language: English / Arabic -->
+<script>
+window.I18N = {
+  mount: "header",
+  text: {
+    "Tower Monitor": "مراقب الأبراج",
+    "D-Link DWR-921 LTE modem": "مودم LTE طراز D-Link DWR-921",
+    "D-Link DWR-921 LTE modem · DRY RUN: lock commands are not sent": "مودم LTE طراز D-Link DWR-921 · وضع التجربة: لا تُرسَل أوامر التثبيت",
+    "Home devices →": "أجهزة المنزل ←",
+    "Router settings": "إعدادات جهاز التوجيه",
+    "Connecting…": "جارٍ الاتصال…",
+    "Hide": "إخفاء",
+    "Connected tower": "البرج المتصل",
+    "Internet": "الإنترنت",
+    "Internet ping": "اختبار الاتصال بالإنترنت",
+    "Speed in use now": "السرعة المستخدمة الآن",
+    "LTE traffic · all devices": "حركة LTE · كل الأجهزة",
+    "Download": "التنزيل",
+    "Upload": "الرفع",
+    "Mbps, all devices together": "Mbps، لكل الأجهزة معًا",
+    "Updates every 0.5 s": "يتحدّث كل 0.5 ث",
+    "This Mac · network traffic": "هذا الـ Mac · حركة الشبكة",
+    "Received": "الوارد",
+    "Sent": "الصادر",
+    "Includes local traffic": "تشمل حركة الشبكة المحلية",
+    "Whole-house speed": "سرعة المنزل كله",
+    "Mbps · LTE link": "Mbps · اتصال LTE",
+    "This Mac": "هذا الـ Mac",
+    "MB/s · includes local traffic": "MB/s · تشمل حركة الشبكة المحلية",
+    "Network": "الشبكة",
+    "Tower lock": "تثبيت البرج",
+    "Remove lock": "إلغاء التثبيت",
+    "Tower switches": "تبديلات البرج",
+    "Signal of the connected tower": "إشارة البرج المتصل",
+    "Higher is better on all three.": "القيمة الأعلى أفضل في المقاييس الثلاثة.",
+    "Towers the modem can see": "الأبراج التي يرصدها المودم",
+    "Strongest first. The list changes as the modem scans. Lock keeps the modem on the tower you pick. Site and ping are known only for the connected tower; ping is the middle reply time of the router's test packets in the last minute.":
+      "الأقوى أولًا. تتغيّر القائمة أثناء بحث المودم. يُبقي «تثبيت» المودمَ على البرج الذي تختاره. الموقع وزمن الاستجابة معروفان للبرج المتصل فقط؛ وزمن الاستجابة هو الوسيط لأزمنة ردّ حزم الاختبار التي أرسلها جهاز التوجيه في الدقيقة الأخيرة.",
+    "Tower": "البرج",
+    "Strength": "القوة",
+    "Quality": "الجودة",
+    "Ping": "زمن الاستجابة",
+    "Role": "الدور",
+    "Lock": "تثبيت",
+    "No towers reported yet.": "لم يُبلَّغ عن أي برج بعد.",
+    "Distance to the connected tower": "المسافة إلى البرج المتصل",
+    "Set locations": "تحديد المواقع",
+    "My location": "موقعي",
+    "latitude, longitude   e.g. 31.5017, 34.4668": "خط العرض، خط الطول   مثال: 31.5017, 34.4668",
+    "Use this computer's location": "استخدام موقع هذا الحاسوب",
+    "Use this Mac's location": "استخدام موقع هذا الـ Mac",
+    "Location of the connected tower": "موقع البرج المتصل",
+    "latitude, longitude": "خط العرض، خط الطول",
+    "Save": "حفظ",
+    "Time range": "الفترة الزمنية",
+    "15 min": "15 دقيقة",
+    "1 hour": "ساعة",
+    "6 hours": "6 ساعات",
+    "24 hours": "24 ساعة",
+    "Show data table": "إظهار جدول البيانات",
+    "Hide data table": "إخفاء جدول البيانات",
+    "Signal strength by tower": "قوة الإشارة لكل برج",
+    "RSRP in dBm. The strip underneath shows which tower was connected.": "RSRP بوحدة dBm. يبيّن الشريط أسفله البرج الذي كان متصلًا.",
+    "Signal strength by tower over time": "قوة الإشارة لكل برج عبر الوقت",
+    "Collecting readings…": "جارٍ جمع القراءات…",
+    "Signal quality of the connected tower": "جودة إشارة البرج المتصل",
+    "SINR in dB. Below 0 means more noise than signal.": "SINR بوحدة dB. القيمة دون 0 تعني أن الضجيج أقوى من الإشارة.",
+    "Signal quality of the connected tower over time": "جودة إشارة البرج المتصل عبر الوقت",
+    "Download and upload speed": "سرعة التنزيل والرفع",
+    "Mbps passing through the mobile link, all devices together. This is the traffic in use, not the most the line can carry.":
+      "Mbps المارّة عبر اتصال الشبكة الخلوية لكل الأجهزة معًا. هذه هي الحركة المستخدمة، وليست أقصى ما يتحمّله الخط.",
+    "Download and upload speed over time": "سرعة التنزيل والرفع عبر الوقت",
+    "Events": "الأحداث",
+    "Tower switches and internet drops, newest first.": "تبديلات البرج وانقطاعات الإنترنت، الأحدث أولًا.",
+    "Cancel": "إلغاء",
+    "OK": "حسنًا",
+    "Router not reachable": "يتعذّر الوصول إلى جهاز التوجيه",
+    "The modem is not answering": "المودم لا يستجيب",
+    "The router is reachable but the modem returned no cell information. It may be restarting.": "جهاز التوجيه متاح، لكن المودم لم يُرجع أي معلومات عن الأبراج. ربما يُعاد تشغيله.",
+    "None": "لا يوجد",
+    "Not attached to a tower": "غير متصل بأي برج",
+    "Offline": "غير متصل",
+    "Online, unstable": "متصل، غير مستقر",
+    "Online": "متصل",
+    "No recent test": "لا يوجد اختبار حديث",
+    "No replies": "لا توجد استجابة",
+    "Packet loss": "فقدان في الحزم",
+    "Replies received": "تصل الاستجابات",
+    "last 15 min": "آخر 15 دقيقة",
+    "last hour": "آخر ساعة",
+    "last 6 hours": "آخر 6 ساعات",
+    "last 24 hours": "آخر 24 ساعة",
+    "Unknown": "غير معروف",
+    "Lock list not readable": "تعذّرت قراءة قائمة التثبيت",
+    "No towers listed": "لا توجد أبراج في القائمة",
+    "The modem is free to choose": "المودم يختار البرج بنفسه",
+    "Allowed towers in the modem's lock list": "الأبراج المسموح بها في قائمة تثبيت المودم",
+    "Only tower in the modem's lock list": "البرج الوحيد في قائمة تثبيت المودم",
+    "Strength (RSRP)": "القوة (RSRP)",
+    "Quality (RSRQ)": "الجودة (RSRQ)",
+    "Signal vs noise (SINR)": "الإشارة مقابل الضجيج (SINR)",
+    "Excellent": "ممتازة",
+    "Good": "جيدة",
+    "Fair": "مقبولة",
+    "Poor": "ضعيفة",
+    "Very poor": "ضعيفة جدًا",
+    "No reading": "لا توجد قراءة",
+    "No reply": "لا استجابة",
+    "Connected": "متصل",
+    "Neighbour": "مجاور",
+    "Strongest": "الأقوى",
+    "In lock list": "في قائمة التثبيت",
+    "Nothing yet. Tower switches and internet drops will be listed here.": "لا شيء بعد. ستظهر هنا تبديلات البرج وانقطاعات الإنترنت.",
+    "Removing the tower lock": "جارٍ إلغاء تثبيت البرج",
+    "Removing the tower lock…": "جارٍ إلغاء تثبيت البرج…",
+    "That didn't start": "لم يبدأ الإجراء",
+    "The Tower Monitor app is not running.": "تطبيق مراقب الأبراج لا يعمل.",
+    "Tower Monitor did not accept the request.": "لم يقبل مراقب الأبراج الطلب.",
+    "You are already on this tower. Locking stops the modem from moving to another one.": "أنت متصل بهذا البرج بالفعل. التثبيت يمنع المودم من الانتقال إلى برج آخر.",
+    "The lock starts only when the router is restarted. After you confirm, the page asks you to restart the router; the internet is down for about 2 minutes while it restarts.":
+      "لا يبدأ التثبيت إلا بعد إعادة تشغيل جهاز التوجيه. بعد التأكيد ستطلب منك الصفحة إعادة تشغيله، وينقطع الإنترنت نحو دقيقتين أثناء ذلك.",
+    "If the modem cannot connect to this tower after the restart, Tower Monitor switches the lock off again after about 2 minutes and asks for one more restart.":
+      "إذا تعذّر على المودم الاتصال بهذا البرج بعد إعادة التشغيل، يلغي مراقب الأبراج التثبيت بعد نحو دقيقتين ويطلب إعادة تشغيل أخرى.",
+    "New way of locking, first real test: it is not yet known whether the modem keeps the lock through a router restart. The page will say what it finds.":
+      "طريقة تثبيت جديدة، وهذه أول تجربة فعلية لها: لا نعرف بعد إن كان المودم يحتفظ بالتثبيت بعد إعادة تشغيل جهاز التوجيه. ستخبرك الصفحة بما يحدث.",
+    "Remove the tower lock?": "هل تريد إلغاء تثبيت البرج؟",
+    "The lock is switched off in the modem, then the page asks you to restart the router. The internet is down for about 2 minutes while it restarts.":
+      "يُلغى التثبيت في المودم، ثم تطلب منك الصفحة إعادة تشغيل جهاز التوجيه. ينقطع الإنترنت نحو دقيقتين أثناء إعادة التشغيل.",
+    "Afterwards the modem chooses the tower by itself again.": "بعد ذلك يعود المودم إلى اختيار البرج بنفسه.",
+    "Chart area. Move the pointer or use the left and right arrow keys to read values.": "منطقة الرسم البياني. حرّك المؤشر أو استخدم مفتاحَي السهم الأيمن والأيسر لقراءة القيم.",
+    "Time": "الوقت",
+    "Download (Mbps)": "التنزيل (Mbps)",
+    "Upload (Mbps)": "الرفع (Mbps)",
+    "Not connected to a tower.": "غير متصل بأي برج.",
+    "your operator": "مشغّل شبكتك",
+    "Add your location and this tower's location to see the distance and direction.": "أضف موقعك وموقع هذا البرج لترى المسافة والاتجاه.",
+    "Add your location to see the distance.": "أضف موقعك لترى المسافة.",
+    "This browser can't provide a location. Type the coordinates instead.": "لا يستطيع هذا المتصفح تحديد الموقع. اكتب الإحداثيات بدلًا من ذلك.",
+    "Asking the browser for your location…": "جارٍ طلب موقعك من المتصفح…",
+    "The browser didn't share a location. Type the coordinates instead.": "لم يشارك المتصفح الموقع. اكتب الإحداثيات بدلًا من ذلك.",
+    "Use the form: latitude, longitude (for example 31.5017, 34.4668).": "استخدم الصيغة: خط العرض، خط الطول (مثال: 31.5017, 34.4668).",
+    "Saved.": "تم الحفظ.",
+    "Couldn't save. Is Tower Monitor still running?": "تعذّر الحفظ. هل ما زال مراقب الأبراج يعمل؟",
+    "Tower Monitor app is not running": "تطبيق مراقب الأبراج لا يعمل",
+    "north": "الشمال", "north-east": "الشمال الشرقي", "east": "الشرق", "south-east": "الجنوب الشرقي",
+    "south": "الجنوب", "south-west": "الجنوب الغربي", "west": "الغرب", "north-west": "الشمال الغربي",
+    /* from the app */
+    "Internet is back": "عاد الإنترنت",
+    "Internet went down": "انقطع الإنترنت",
+    "Router not reachable from this computer": "يتعذّر الوصول إلى جهاز التوجيه من هذا الحاسوب",
+    "Router not reachable from this Mac": "يتعذّر الوصول إلى جهاز التوجيه من هذا الـ Mac",
+    "Router reachable again": "عاد الوصول إلى جهاز التوجيه",
+    "Remove lock requested": "طُلب إلغاء التثبيت",
+    "This computer cannot reach the router right now": "لا يستطيع هذا الحاسوب الوصول إلى جهاز التوجيه الآن",
+    "This Mac cannot reach the router right now": "لا يستطيع هذا الـ Mac الوصول إلى جهاز التوجيه الآن",
+    "The router is reachable again": "عاد الوصول إلى جهاز التوجيه",
+    "The modem is answering again": "عاد المودم إلى الاستجابة",
+    "The modem is still restarting": "ما زال المودم يُعاد تشغيله",
+    "The router has a mobile-network address": "حصل جهاز التوجيه على عنوان من الشبكة الخلوية",
+    "The router has no mobile-network address yet": "لم يحصل جهاز التوجيه على عنوان من الشبكة الخلوية بعد",
+    "Test packets are getting through": "حزم الاختبار تصل",
+    "The router has restarted": "أُعيد تشغيل جهاز التوجيه",
+    "Switching the lock off": "جارٍ إلغاء التثبيت",
+    "Emptying the list of allowed towers": "جارٍ إفراغ قائمة الأبراج المسموح بها",
+    "Switching the lock on": "جارٍ تفعيل التثبيت",
+    "The lock is stored in the modem. It starts when the modem starts next": "حُفظ التثبيت في المودم. يبدأ عند تشغيل المودم في المرة القادمة",
+    "Not registered": "غير مسجّل", "Registered": "مسجّل", "Searching": "جارٍ البحث",
+    "Registration denied": "رُفض التسجيل", "Registered (roaming)": "مسجّل (تجوال)",
+  },
+  templates: {
+    "Live · updated {t}": "مباشر · آخر تحديث {t}",
+    "Can't reach the router at {h}": "يتعذّر الوصول إلى جهاز التوجيه على {h}",
+    "MB/s · {i} · includes local traffic": "MB/s · {i} · تشمل حركة الشبكة المحلية",
+    "{i} · includes local traffic": "{i} · تشمل حركة الشبكة المحلية",
+    "Site {a}, sector {b} · on it for {c}": "الموقع {a}، القطاع {b} · متصل منذ {c}",
+    "{p}% of test packets lost in the {r}": "فُقد {p}% من حزم الاختبار خلال {r}",
+    "{p}% lost in the last minute · {a} ms median, {b} ms max": "فُقد {p}% خلال الدقيقة الأخيرة · الوسيط {a} ms، الأقصى {b} ms",
+    "{p}% lost in the last minute": "فُقد {p}% خلال الدقيقة الأخيرة",
+    "in the {r}": "خلال {r}",
+    "Site {a} · sector {b}": "الموقع {a} · القطاع {b}",
+    "{a} of {b} test packets answered in the last {d}; fastest {x} ms, slowest {y} ms": "استُجيب لـ {a} من {b} حزم اختبار خلال آخر {d}؛ الأسرع {x} ms، والأبطأ {y} ms",
+    "{a} of {b} test packets answered in the last {d}": "استُجيب لـ {a} من {b} حزم اختبار خلال آخر {d}",
+    "Lock to PCI {p}": "التثبيت على PCI {p}",
+    "Lock to PCI {p}?": "هل تريد التثبيت على PCI {p}؟",
+    "Used before, seen {x}": "استُخدم سابقًا، رُصد {x}",
+    "Seen {x}": "رُصد {x}",
+    "{d} ago": "قبل {d}",
+    "Reads the modem and the router's traffic counters every {s} s and keeps a log in tower_log.csv. {n} readings in the {r}. The modem is only changed when you press Lock or Remove lock; each change is recorded in lock_actions.log.":
+      "يقرأ المودم وعدّادات حركة جهاز التوجيه كل {s} ث ويحفظ سجلًا في tower_log.csv. \u200f{n} قراءة خلال {r}. لا يتغيّر شيء في المودم إلا عند الضغط على «تثبيت» أو «إلغاء التثبيت»، ويُسجَّل كل تغيير في lock_actions.log.",
+    "Tower and chart readings target every {s} s and are logged in tower_log.csv. {n} readings in the {r}. The modem is only changed when you press Lock or Remove lock; each change is recorded in lock_actions.log.":
+      "تُقرأ بيانات الأبراج والرسوم كل {s} ث وتُسجَّل في tower_log.csv. \u200f{n} قراءة خلال {r}. لا يتغيّر شيء في المودم إلا عند الضغط على «تثبيت» أو «إلغاء التثبيت»، ويُسجَّل كل تغيير في lock_actions.log.",
+    "Locking to PCI {p}…": "جارٍ التثبيت على PCI {p}…",
+    "Locking to PCI {p}": "التثبيت على PCI {p}",
+    "Dry run. {x}": "تجربة. {x}",
+    "Started {t}. This page keeps working while the internet is down. Follow the newest line below.": "بدأ في {t}. تبقى هذه الصفحة تعمل أثناء انقطاع الإنترنت. تابع أحدث سطر أدناه.",
+    "{w}: finished {t}, after {d}.": "{w}: انتهى في {t}، بعد {d}.",
+    "PCI {p} is {g} dB weaker here than PCI {s}, the tower you are on, and it uses the same frequency, so PCI {s2} will act as noise on top of it. Expect a slower, less stable connection.":
+      "إشارة PCI {p} هنا أضعف بمقدار {g} dB من PCI {s}، البرج الذي تتصل به، وهو يستخدم التردد نفسه، لذا سيعمل PCI {s2} كضجيج فوقه. توقّع اتصالًا أبطأ وأقل استقرارًا.",
+    "PCI {p} is {g} dB weaker here than PCI {s}, the tower you are on. Expect a slower, less stable connection.":
+      "إشارة PCI {p} هنا أضعف بمقدار {g} dB من PCI {s}، البرج الذي تتصل به. توقّع اتصالًا أبطأ وأقل استقرارًا.",
+    "Connected: PCI {p} · internet down": "متصل: PCI {p} · الإنترنت مقطوع",
+    "Connected: PCI {p}": "متصل: PCI {p}",
+    "PCI {p} · connected {s}% of the time": "PCI {p} · متصل {s}% من الوقت",
+    "+{n} weaker towers seen briefly, not charted": "+{n} أبراج أضعف رُصدت لفترة قصيرة ولم تُرسم",
+    "+{n} weaker tower seen briefly, not charted": "+{n} برج أضعف رُصد لفترة قصيرة ولم يُرسم",
+    "{n} · average {a}, highest {b} Mbps": "{n} · المتوسط {a}، الأعلى {b} Mbps",
+    "(PCI {p}, site {s})": "(PCI {p}، الموقع {s})",
+    "Found (accurate to about {a} m). Press Save to keep it.": "تم تحديد الموقع (بدقة نحو {a} م). اضغط «حفظ» للاحتفاظ به.",
+    "Switched tower: PCI {a} to PCI {b}": "تبدّل البرج: من PCI {a} إلى PCI {b}",
+    "Modem band setting changed: {a} ({b}) to {c} ({d})": "تغيّر إعداد النطاقات في المودم: من {a} ({b}) إلى {c} ({d})",
+    "Changed band: B{a} to B{b} (PCI {p}, EARFCN {e}, band setting {m})": "تغيّر النطاق: من B{a} إلى B{b} (PCI {p}، EARFCN {e}، إعداد النطاقات {m})",
+    "Changed band: B{a} to B{b} (PCI {p}, EARFCN {e})": "تغيّر النطاق: من B{a} إلى B{b} (PCI {p}، EARFCN {e})",
+    "Lock to PCI {p} requested": "طُلب التثبيت على PCI {p}",
+    "Network registration: {r}": "التسجيل في الشبكة: {r}",
+    "Connected to PCI {p} (EARFCN {e})": "متصل بـ PCI {p} (EARFCN {e})",
+    "Storing {n} as the only allowed tower": "جارٍ حفظ {n} كالبرج الوحيد المسموح به",
+    "Note: the list also still allows {l}": "ملاحظة: ما زالت القائمة تسمح أيضًا بـ {l}",
+    "The modem has found no usable signal from PCI {p} for {s} seconds": "لم يجد المودم إشارة صالحة من PCI {p} لمدة {s} ثانية",
+    "No internet {m} minutes after the restart": "لا إنترنت بعد {m} دقائق من إعادة التشغيل",
+    "OpenCelliD answered: {x}": "ردّ OpenCelliD: {x}",
+  },
+  fragments: {
+    "Check that this computer is on the router's network and that SSH is enabled.": "تأكّد من أن هذا الحاسوب متصل بشبكة جهاز التوجيه وأن SSH مفعّل.",
+    "Check that this Mac is on the router's network and that SSH is enabled.": "تأكّد من أن هذا الـ Mac متصل بشبكة جهاز التوجيه وأن SSH مفعّل.",
+    "Last reading {d} ago; the values below are from then.": "آخر قراءة قبل {d}، والقيم أدناه من ذلك الوقت.",
+    "The router did not answer in time.": "لم يستجب جهاز التوجيه في الوقت المحدد.",
+    "The router rejected the username or password in config.json.": "رفض جهاز التوجيه اسم المستخدم أو كلمة المرور في config.json.",
+    "Could not reach the router over SSH ({e}).": "تعذّر الوصول إلى جهاز التوجيه عبر SSH ({e}).",
+    "No answer from the router.": "لا استجابة من جهاز التوجيه.",
+    "The modem cannot see PCI {p} right now. It was last seen at {t} with {r} dBm.": "لا يرصد المودم PCI {p} الآن. آخر رصد له كان في {t} بقوة {r} dBm.",
+    "That is {g} dB weaker than PCI {s}, the tower you are on.": "أي أضعف بمقدار {g} dB من PCI {s}، البرج الذي تتصل به.",
+    "To find it, look up site {s} of {op} (cell ID {c}, area code {t}) on a tower map such as cellmapper.net, then copy the tower's coordinates here.":
+      "لإيجاده، ابحث عن الموقع {s} التابع لـ {op} (معرّف الخلية {c}، رمز المنطقة {t}) في خريطة أبراج مثل cellmapper.net، ثم انسخ إحداثيات البرج هنا.",
+    "To have it looked up automatically, put your OpenCelliD key in config.json and restart Tower Monitor.": "للبحث عنه تلقائيًا، ضع مفتاح OpenCelliD الخاص بك في config.json وأعد تشغيل مراقب الأبراج.",
+    "The tower is to the {dir} of you (compass bearing {b}°).": "يقع البرج في جهة {dir} منك (اتجاه البوصلة {b}°).",
+    "The tower's position comes from OpenCelliD and is an estimate": "موقع البرج مأخوذ من OpenCelliD وهو تقديري",
+    " (give or take about {r} m).": " (بهامش نحو {r} م).",
+    "Calculated from the two saved locations, so it is as accurate as they are.": "محسوبة من الموقعين المحفوظين، فدقّتها بقدر دقّتهما.",
+    "No location saved yet for this tower (PCI {p}).": "لم يُحفظ موقع لهذا البرج بعد (PCI {p}).",
+    "OpenCelliD has no record of this tower.": "لا يوجد لهذا البرج سجل في OpenCelliD.",
+    "Enter its location by hand.": "أدخل موقعه يدويًا.",
+    "OpenCelliD did not accept the key in config.json.": "لم يقبل OpenCelliD المفتاح الموجود في config.json.",
+    "Could not reach OpenCelliD.": "تعذّر الوصول إلى OpenCelliD.",
+    "It will be tried again when Tower Monitor restarts.": "ستُعاد المحاولة عند إعادة تشغيل مراقب الأبراج.",
+    "Looking this tower up on OpenCelliD…": "جارٍ البحث عن هذا البرج في OpenCelliD…",
+    "No readings for {m} min (monitor stopped or router unreachable)": "لا قراءات لمدة {m} د (توقّف المراقب أو تعذّر الوصول إلى جهاز التوجيه)",
+    "The modem is connected, but the router has not picked the connection up.": "المودم متصل، لكن جهاز التوجيه لم يلتقط الاتصال.",
+    "On the router's page ({u}, WAN), tick the mobile connection and press RECONNECT.": "في صفحة جهاز التوجيه ({u}، WAN) اختر اتصال الشبكة الخلوية واضغط RECONNECT.",
+    "If that does not help, restart the router.": "إن لم يُفِد ذلك، أعد تشغيل جهاز التوجيه.",
+    "Diagnosis: ": "التشخيص: ",
+    "The modem is not answering.": "المودم لا يستجيب.",
+    "The modem could not register on the network with this lock.": "لم يتمكّن المودم من التسجيل في الشبكة مع هذا التثبيت.",
+    "The modem registered on the network but got no data connection.": "سُجّل المودم في الشبكة لكنه لم يحصل على اتصال بيانات.",
+    "The modem is connected, but the router did not reconnect to it after the modem restart.": "المودم متصل، لكن جهاز التوجيه لم يُعِد الاتصال به بعد إعادة تشغيل المودم.",
+    "The modem and router look connected, but no test packets get through.": "يبدو المودم وجهاز التوجيه متصلين، لكن حزم الاختبار لا تصل.",
+    "Now restart the router: use Reboot on its page ({u}) or unplug its power for 10 seconds.": "أعد تشغيل جهاز التوجيه الآن: استخدم Reboot في صفحته ({u}) أو افصل الكهرباء عنه 10 ثوانٍ.",
+    "The internet keeps working until you do. Waiting for the restart…": "يبقى الإنترنت يعمل حتى تفعل ذلك. بانتظار إعادة التشغيل…",
+    "That brings the internet back. Waiting for the restart…": "هذا يعيد الإنترنت. بانتظار إعادة التشغيل…",
+    "The modem did not accept the command to switch the lock off.": "لم يقبل المودم أمر إلغاء التثبيت.",
+    "Restart the router, then press Remove lock again.": "أعد تشغيل جهاز التوجيه، ثم اضغط «إلغاء التثبيت» مرة أخرى.",
+    "The lock is switched off in the modem's settings.": "أُلغي التثبيت في إعدادات المودم.",
+    "The modem only notices at its next start, so it stays on the locked tower until the router is restarted.": "لا يلاحظ المودم ذلك إلا عند تشغيله التالي، لذا يبقى على البرج المثبّت حتى يُعاد تشغيل جهاز التوجيه.",
+    "The lock was removed and the internet is back.": "أُلغي التثبيت وعاد الإنترنت.",
+    "The modem chooses the tower by itself again.": "يعود المودم إلى اختيار البرج بنفسه.",
+    "Lock removed.": "أُلغي التثبيت.",
+    "The lock is switched off, but the internet has not come back.": "أُلغي التثبيت، لكن الإنترنت لم يعد.",
+    "The modem refused the tower list.": "رفض المودم قائمة الأبراج.",
+    "Nothing was changed.": "لم يتغيّر شيء.",
+    "The modem did not store the tower, so the lock was not switched on.": "لم يحفظ المودم البرج، لذا لم يُفعَّل التثبيت.",
+    "The modem refused to switch the lock on.": "رفض المودم تفعيل التثبيت.",
+    "The tower list was stored, but the modem still chooses the tower by itself.": "حُفظت قائمة الأبراج، لكن المودم ما زال يختار البرج بنفسه.",
+    "{n} is stored and the lock is switched on, but the router was not restarted.": "حُفظ {n} وفُعّل التثبيت، لكن جهاز التوجيه لم يُعَد تشغيله.",
+    "The lock starts at the next router restart; until then nothing changes.": "يبدأ التثبيت عند إعادة تشغيل جهاز التوجيه التالية، ولن يتغيّر شيء حتى ذلك الحين.",
+    "Online on {n}, and the modem kept the lock through the restart.": "متصل على {n}، واحتفظ المودم بالتثبيت بعد إعادة التشغيل.",
+    "The modem does not report whether the lock is active, so the proof is that it stays on this tower from now on.": "لا يُبلغ المودم إن كان التثبيت فعّالًا، والدليل هو بقاؤه على هذا البرج من الآن فصاعدًا.",
+    "The internet is back, but the modem forgot the allowed tower when it restarted, so it is not locked.": "عاد الإنترنت، لكن المودم نسي البرج المسموح به عند إعادة تشغيله، فهو غير مثبّت.",
+    "This modem does not keep the lock through a router restart.": "هذا المودم لا يحتفظ بالتثبيت بعد إعادة تشغيل جهاز التوجيه.",
+    "The modem came back online on PCI {a} instead of PCI {b}, so the lock did not take effect.": "عاد المودم متصلًا على PCI {a} بدلًا من PCI {b}، فلم يسرِ التثبيت.",
+    "The lock was switched off again; the internet is working.": "أُلغي التثبيت مرة أخرى، والإنترنت يعمل.",
+    "PCI {p} cannot be used from here: with the lock on, the modem could not connect to it (its signal is too weak or too noisy at this spot).":
+      "لا يمكن استخدام PCI {p} من هنا: مع تفعيل التثبيت لم يتمكّن المودم من الاتصال به (إشارته ضعيفة جدًا أو كثيرة الضجيج في هذا المكان).",
+    "Locking to PCI {p} did not work: ": "لم ينجح التثبيت على PCI {p}: ",
+    "Tower Monitor hit an unexpected error ({e}).": "واجه مراقب الأبراج خطأً غير متوقع ({e}).",
+    "Check the Tower lock tile; if the internet stays down, press Remove lock or restart the router.": "راجع بطاقة «تثبيت البرج»؛ وإذا بقي الإنترنت مقطوعًا، اضغط «إلغاء التثبيت» أو أعد تشغيل جهاز التوجيه.",
+    "A lock change is already in progress.": "يوجد تغيير في التثبيت قيد التنفيذ بالفعل.",
+    "The router is not reachable right now.": "يتعذّر الوصول إلى جهاز التوجيه الآن.",
+    "Dry run. ": "تجربة. ",
+  },
+  extra: [[/\bband (\d+)/g, "النطاق $1"], [/, band setting /g, "، إعداد النطاقات "],
+          [/ · Registered \(roaming\)$/, " · مسجّل (تجوال)"], [/ · Registered$/, " · مسجّل"], [/ · Not registered$/, " · غير مسجّل"],
+          [/ · Searching$/, " · جارٍ البحث"], [/ · Registration denied$/, " · رُفض التسجيل"], [/ · Unknown$/, " · غير معروف"]],
+};
+
+/* Language: English or Arabic. The page is written in English; when Arabic is chosen this block
+   lays the page out right to left and translates what it shows, including what the page builds
+   later and messages from the app, using the table above. Anything not in the table stays English. */
+(() => {
+  "use strict";
+  const KEY = "lang";
+  let saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) { /* storage blocked: follow the device */ }
+  if (saved !== "ar" && saved !== "en") saved = null;
+  const device = /^ar\b/i.test(navigator.language || "") ? "ar" : "en";
+  const lang = saved || device, ar = lang === "ar";
+  const html = document.documentElement;
+  html.lang = lang; html.dir = ar ? "rtl" : "ltr";
+  window.LANG = lang;
+
+  const T = window.I18N || {};
+  const TEXT = T.text || {};
+  const BLOCKS = {};   // whole elements whose English text maps to Arabic markup
+  const norm = s => s.replace(/\s+/g, " ").trim();
+  for (const [en, a] of Object.entries(T.blocks || {})) BLOCKS[norm(en)] = a;
+  const esc = s => s.replace(/[.*+?^$()|[\]\\]/g, "\\$&");
+  const compile = (en, a, whole) => {
+    const names = [];
+    const src = esc(en).replace(/\{(\w+)\}/g, (_, n) => { names.push(n); return "(.+?)"; });
+    return {re: new RegExp(whole ? `^${src}$` : src, whole ? "" : "g"), names, a};
+  };
+  const TPL = Object.entries(T.templates || {}).map(([en, a]) => compile(en, a, true));
+  const FRAG = Object.entries(T.fragments || {}).sort((x, y) => y[0].length - x[0].length).map(([en, a]) => compile(en, a, false));
+  const UNITS = [
+    [/(\d[\d.,]*) ?min\b/g, "$1 د"], [/(\d[\d.,]*) h\b/g, "$1 س"], [/(\d[\d.,]*) s\b/g, "$1 ث"],
+    [/(\d[\d.,]*) km\b/g, "$1 كم"], [/(\d[\d.,]*) m\b/g, "$1 م"], [/(\d[\d.,]*) ?(GB|MB|kB)\b/g, "$1 $2"],
+    ...(T.extra || []),
+  ];
+  // A value like "-88.4 dBm" would read "dBm 88.4-" in right-to-left text; isolate it as left to right.
+  const NUM = /(?:[-+≈<]\s?)?\d[\d.,]*\s?(dBm|dB|ms|Mbps|Mbit\/s|kbit\/s|MB\/s|GB|MB|kB)(?![A-Za-z])/g;
+  const IP = /\b\d{1,3}(?:\.\d{1,3}){3}\b/g;   // addresses too
+  const fill = (p, m) => {
+    let out = p.a;
+    p.names.forEach((n, i) => { out = out.split(`{${n}}`).join(words(m[i + 1])); });
+    return out;
+  };
+  function tr(s) {
+    if (!ar || s == null) return s;
+    s = String(s);
+    if (s.includes("\u2066")) return s;   // already translated
+    const out = words(s);
+    return /\d/.test(out) ? out.replace(NUM, "\u2066$&\u2069") : out;
+  }
+  const cache = new Map();
+  function words(s) {
+    const k = s.trim();
+    if (!k || !/[A-Za-z]/.test(k)) return s;
+    let out = cache.get(k);
+    if (out === undefined) {
+      out = TEXT[k];
+      if (out === undefined) {
+        const p = TPL.find(p => p.re.test(k));
+        if (p) out = fill(p, k.match(p.re));
+        else {
+          out = k;
+          for (const f of FRAG) out = out.replace(f.re, (...m) => fill(f, m));
+        }
+        for (const [re, to] of UNITS) out = out.replace(re, to);
+      }
+      if (cache.size > 3000) cache.clear();
+      cache.set(k, out);
+    }
+    if (out === k) return s;
+    const at = s.indexOf(k);
+    return s.slice(0, at) + out + s.slice(at + k.length);
+  }
+  window.tr = tr;
+
+  /* Times and dates come out in Arabic with Western digits, like the numbers around them, on a 24-hour clock. */
+  if (ar) for (const m of ["toLocaleTimeString", "toLocaleString", "toLocaleDateString"]) {
+    const f = Date.prototype[m];
+    Date.prototype[m] = function (_locales, opts) { return f.call(this, "ar-u-nu-latn-hc-h23", opts); };
+  }
+  if (ar && window.CanvasRenderingContext2D) {   // chart labels drawn on a canvas
+    const f = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (t, ...rest) { return f.call(this, words(String(t)), ...rest); };
+  }
+  if (ar) for (const m of ["alert", "confirm", "prompt"]) {
+    const f = window[m];
+    window[m] = (msg, ...rest) => f.call(window, tr(msg), ...rest);
+  }
+
+  const SKIP = "script,style,textarea,code,[translate=no]" + (T.skip ? "," + T.skip : "");   // T.skip: names people typed
+  const ATTRS = ["title", "aria-label", "placeholder", "alt"];
+  function attrs(e) {
+    for (const a of ATTRS) {
+      const v = e.getAttribute(a);
+      if (v) { const w = tr(v); if (w !== v) e.setAttribute(a, w); }
+    }
+  }
+  function text(n) {
+    const p = n.parentElement;
+    if (!p || p.closest(SKIP)) return;
+    const w = tr(n.nodeValue);
+    if (w !== n.nodeValue) n.nodeValue = w;
+  }
+  function walk(node) {
+    if (node.nodeType === 3) return text(node);
+    if (node.nodeType !== 1) return;
+    if (node.matches(SKIP)) {   // its text stays as written; tooltips and placeholders are still translated
+      if (!node.matches("script,style,[translate=no]")) attrs(node);
+      return;
+    }
+    const b = BLOCKS[norm(node.textContent)];
+    if (b !== undefined && node.children.length && !node.closest("[translate=no]")) { node.innerHTML = b; return; }
+    attrs(node);
+    for (const c of Array.from(node.childNodes)) walk(c);
+  }
+
+  function picker() {
+    const box = document.createElement("label");
+    box.className = "lang-pick";
+    box.setAttribute("translate", "no");
+    box.title = ar ? "اللغة" : "Language";
+    const sel = document.createElement("select");
+    sel.setAttribute("aria-label", ar ? "اللغة" : "Language");
+    for (const [v, name] of [["", ar ? "لغة الجهاز" : "Device language"], ["en", "English"], ["ar", "العربية"]]) {
+      const o = document.createElement("option"); o.value = v; o.textContent = name; sel.append(o);
+    }
+    sel.value = saved || "";
+    sel.addEventListener("change", () => {
+      try { if (sel.value) localStorage.setItem(KEY, sel.value); else localStorage.removeItem(KEY); } catch (e) { /* not kept */ }
+      location.reload();
+    });
+    box.append(Object.assign(document.createElement("span"), {textContent: "🌐", ariaHidden: "true"}), sel);
+    const style = document.createElement("style");
+    style.textContent = `.lang-pick{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--text2,inherit)}
+.lang-pick select{font:inherit;color:inherit;background:var(--surface,transparent);border:1px solid var(--border,#8884);border-radius:7px;padding:2px 4px;cursor:pointer}
+[dir=rtl] svg,[dir=rtl] canvas{direction:ltr}
+${T.css || ""}`;
+    document.head.append(style);
+    const spot = document.querySelector(T.mount || "header") || document.querySelector("main") || document.body;
+    if (T.prepend) {   // on its own line above the page's content
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;justify-content:flex-end;margin-bottom:8px";
+      row.append(box); spot.prepend(row);
+    } else spot.append(box);
+  }
+
+  function start() {
+    picker();
+    if (!ar) return;
+    document.title = tr(document.title);
+    walk(document.body);
+    new MutationObserver(records => {
+      for (const r of records) {
+        if (r.type === "characterData") text(r.target);
+        else if (r.type === "attributes") attrs(r.target);
+        else for (const n of r.addedNodes) walk(n);
+      }
+    }).observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS});
+  }
+  if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
+})();
+</script>
+<!-- /language -->
 <script>
 "use strict";
 const $ = id => document.getElementById(id);

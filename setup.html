@@ -34,8 +34,8 @@
     border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; }
   input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   .pw { position: relative; }
-  .pw input { padding-right: 64px; }
-  .pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+  .pw input { padding-inline-end: 64px; }
+  .pw button { position: absolute; inset-inline-end: 6px; top: 50%; transform: translateY(-50%); }
   button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--border);
            background: var(--field); color: var(--text); padding: 6px 12px; }
   button.primary { width: 100%; margin-top: 18px; background: var(--accent); color: var(--accent-text);
@@ -45,16 +45,16 @@
   .router { display: flex; align-items: center; gap: 12px; }
   .router .name { font-weight: 650; }
   .router .addr { color: var(--text2); font-size: 13px; }
-  .router .link { margin-left: auto; }
+  .router .link { margin-inline-start: auto; }
   .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border);
              border-top-color: var(--accent); animation: spin .8s linear infinite; flex: none; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .steps { list-style: none; margin: 12px 0 0; padding: 0; }
   .steps li { display: flex; gap: 8px; align-items: center; padding: 3px 0; }
   .ok { color: var(--good); font-weight: 700; width: 18px; text-align: center; }
-  .error { border-left: 4px solid var(--critical); }
+  .error { border-inline-start: 4px solid var(--critical); }
   .error p { margin: 0 0 8px; }
-  ol.guide { margin: 8px 0 0; padding-left: 20px; }
+  ol.guide { margin: 8px 0 0; padding-inline-start: 20px; }
   ol.guide li { margin: 4px 0; }
   a.button { display: inline-block; margin-top: 10px; text-decoration: none; background: var(--accent);
              color: var(--accent-text); padding: 8px 14px; border-radius: 8px; font-weight: 600; }
@@ -128,6 +128,231 @@
 
   <p class="note" id="note">Your password is saved only on this computer. Tower Monitor talks to the router over your home network; nothing is sent to the internet.</p>
 </main>
+<!-- language: English / Arabic -->
+<script>
+window.I18N = {
+  mount: "main",
+  prepend: true,
+  text: {
+    "Set up Tower Monitor": "إعداد مراقب الأبراج",
+    "Connect to your D-Link router once. After that, Tower Monitor opens straight to your dashboard.": "اتصل بجهاز التوجيه D-Link مرة واحدة، وبعدها يفتح مراقب الأبراج لوحة المعلومات مباشرة.",
+    "Your router": "جهاز التوجيه",
+    "Looking for your router…": "جارٍ البحث عن جهاز التوجيه…",
+    "Change": "تغيير",
+    "Router address": "عنوان جهاز التوجيه",
+    "Router password": "كلمة مرور جهاز التوجيه",
+    "Password": "كلمة المرور",
+    "Show": "إظهار",
+    "Hide": "إخفاء",
+    "The password you use to sign in to the router's web page. If you never changed it, it's printed on the sticker under the router.": "كلمة المرور التي تستخدمها لتسجيل الدخول إلى صفحة جهاز التوجيه. إن لم تغيّرها من قبل، فهي مطبوعة على الملصق أسفل الجهاز.",
+    "Use a different username": "استخدام اسم مستخدم آخر",
+    "Username": "اسم المستخدم",
+    "Connect": "اتصال",
+    "Connecting to the router. This can take up to a minute…": "جارٍ الاتصال بجهاز التوجيه. قد يستغرق ذلك حتى دقيقة…",
+    "Switch SSH on yourself:": "فعّل SSH بنفسك:",
+    "Open the router's page with the button below, and sign in.": "افتح صفحة جهاز التوجيه بالزر أدناه، وسجّل الدخول.",
+    "Come back here and press Connect again.": "عد إلى هنا واضغط «اتصال» مرة أخرى.",
+    "Open the router's page": "فتح صفحة جهاز التوجيه",
+    "All set": "اكتمل الإعداد",
+    "Opening your dashboard…": "جارٍ فتح لوحة المعلومات…",
+    "Your password is saved only on this computer. Tower Monitor talks to the router over your home network; nothing is sent to the internet.": "تُحفظ كلمة المرور على هذا الحاسوب فقط. يتواصل مراقب الأبراج مع جهاز التوجيه عبر شبكتك المنزلية، ولا يُرسَل شيء إلى الإنترنت.",
+    "Tower Monitor couldn't find a D-Link router by itself. Type its address. It's usually 192.168.0.1 and is printed on the sticker under the router.": "لم يعثر مراقب الأبراج على جهاز توجيه D-Link تلقائيًا. اكتب عنوانه، وهو عادةً 192.168.0.1 ومطبوع على الملصق أسفل الجهاز.",
+    "Type the router's address. It's usually 192.168.0.1.": "اكتب عنوان جهاز التوجيه، وهو عادةً 192.168.0.1.",
+    "Tower Monitor stopped answering. Close it and open it again.": "توقف مراقب الأبراج عن الاستجابة. أغلقه وافتحه من جديد.",
+    "Something went wrong.": "حدث خطأ ما.",
+    "Saved. Quit Tower Monitor and open it again to use the new settings.": "تم الحفظ. أغلق مراقب الأبراج وافتحه من جديد لاستخدام الإعدادات الجديدة.",
+    "Saved. If the dashboard doesn't open, close Tower Monitor and open it again.": "تم الحفظ. إن لم تُفتح لوحة المعلومات، أغلق مراقب الأبراج وافتحه من جديد.",
+    /* from the app */
+    "Logged in to the router": "تم تسجيل الدخول إلى جهاز التوجيه",
+    "Switched SSH on": "تم تفعيل SSH",
+    "SSH is already on": "SSH مفعّل بالفعل",
+    "Connected to the modem": "تم الاتصال بالمودم",
+    "Saved": "تم الحفظ",
+    "A required package (paramiko) is missing.": "حزمة مطلوبة (paramiko) غير موجودة.",
+    "SSH is on, but the router did not accept this username and password for SSH.": "SSH مفعّل، لكن جهاز التوجيه لم يقبل اسم المستخدم وكلمة المرور هذين لـ SSH.",
+    "Type the router's address, for example 192.168.0.1.": "اكتب عنوان جهاز التوجيه، مثل 192.168.0.1.",
+    "Type the router's password.": "اكتب كلمة مرور جهاز التوجيه.",
+    "SSH is off on the router, and Tower Monitor could not switch it on by itself.": "SSH معطّل في جهاز التوجيه، ولم يتمكّن مراقب الأبراج من تفعيله تلقائيًا.",
+    "The router says the username or password is wrong.": "يقول جهاز التوجيه إن اسم المستخدم أو كلمة المرور خطأ.",
+    "router error": "خطأ في جهاز التوجيه",
+  },
+  templates: {
+    "{a} Settings folder: {p}": "{a} مجلد الإعدادات: \u2066{p}\u2069",
+    "D-Link {m}": "D-Link {m}",
+    "Other devices that answered: {l}": "أجهزة أخرى استجابت: {l}",
+    "Could not log in over SSH ({e}).": "تعذّر تسجيل الدخول عبر SSH ({e}).",
+    "The router paused logins after wrong passwords. Wait {n} seconds, then try again.": "أوقف جهاز التوجيه تسجيل الدخول مؤقتًا بعد كلمات مرور خاطئة. انتظر {n} ثانية ثم حاول مجددًا.",
+    "Nothing answers at {h}. Check the address, and that this computer is connected to the router's Wi-Fi or cable.": "لا شيء يستجيب على {h}. تحقّق من العنوان، ومن أن هذا الحاسوب متصل بشبكة Wi-Fi الخاصة بجهاز التوجيه أو بكابله.",
+  },
+  fragments: {},
+  blocks: {
+    "Go to System → Telnet/SSH (on some routers: Management or Remote access).": "انتقل إلى <b>System</b> ← <b>Telnet/SSH</b> (في بعض الأجهزة: <b>Management</b> أو <b>Remote access</b>).",
+    "Tick SSH, leave the port at 22, and press Apply.": "فعّل <b>SSH</b>، واترك المنفذ 22، ثم اضغط <b>Apply</b>.",
+    "Come back here and press Connect again.": "عد إلى هنا واضغط <b>اتصال</b> مرة أخرى.",
+  },
+};
+
+/* Language: English or Arabic. The page is written in English; when Arabic is chosen this block
+   lays the page out right to left and translates what it shows, including what the page builds
+   later and messages from the app, using the table above. Anything not in the table stays English. */
+(() => {
+  "use strict";
+  const KEY = "lang";
+  let saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) { /* storage blocked: follow the device */ }
+  if (saved !== "ar" && saved !== "en") saved = null;
+  const device = /^ar\b/i.test(navigator.language || "") ? "ar" : "en";
+  const lang = saved || device, ar = lang === "ar";
+  const html = document.documentElement;
+  html.lang = lang; html.dir = ar ? "rtl" : "ltr";
+  window.LANG = lang;
+
+  const T = window.I18N || {};
+  const TEXT = T.text || {};
+  const BLOCKS = {};   // whole elements whose English text maps to Arabic markup
+  const norm = s => s.replace(/\s+/g, " ").trim();
+  for (const [en, a] of Object.entries(T.blocks || {})) BLOCKS[norm(en)] = a;
+  const esc = s => s.replace(/[.*+?^$()|[\]\\]/g, "\\$&");
+  const compile = (en, a, whole) => {
+    const names = [];
+    const src = esc(en).replace(/\{(\w+)\}/g, (_, n) => { names.push(n); return "(.+?)"; });
+    return {re: new RegExp(whole ? `^${src}$` : src, whole ? "" : "g"), names, a};
+  };
+  const TPL = Object.entries(T.templates || {}).map(([en, a]) => compile(en, a, true));
+  const FRAG = Object.entries(T.fragments || {}).sort((x, y) => y[0].length - x[0].length).map(([en, a]) => compile(en, a, false));
+  const UNITS = [
+    [/(\d[\d.,]*) ?min\b/g, "$1 د"], [/(\d[\d.,]*) h\b/g, "$1 س"], [/(\d[\d.,]*) s\b/g, "$1 ث"],
+    [/(\d[\d.,]*) km\b/g, "$1 كم"], [/(\d[\d.,]*) m\b/g, "$1 م"], [/(\d[\d.,]*) ?(GB|MB|kB)\b/g, "$1 $2"],
+    ...(T.extra || []),
+  ];
+  // A value like "-88.4 dBm" would read "dBm 88.4-" in right-to-left text; isolate it as left to right.
+  const NUM = /(?:[-+≈<]\s?)?\d[\d.,]*\s?(dBm|dB|ms|Mbps|Mbit\/s|kbit\/s|MB\/s|GB|MB|kB)(?![A-Za-z])/g;
+  const IP = /\b\d{1,3}(?:\.\d{1,3}){3}\b/g;   // addresses too
+  const fill = (p, m) => {
+    let out = p.a;
+    p.names.forEach((n, i) => { out = out.split(`{${n}}`).join(words(m[i + 1])); });
+    return out;
+  };
+  function tr(s) {
+    if (!ar || s == null) return s;
+    s = String(s);
+    if (s.includes("\u2066")) return s;   // already translated
+    const out = words(s);
+    return /\d/.test(out) ? out.replace(NUM, "\u2066$&\u2069") : out;
+  }
+  const cache = new Map();
+  function words(s) {
+    const k = s.trim();
+    if (!k || !/[A-Za-z]/.test(k)) return s;
+    let out = cache.get(k);
+    if (out === undefined) {
+      out = TEXT[k];
+      if (out === undefined) {
+        const p = TPL.find(p => p.re.test(k));
+        if (p) out = fill(p, k.match(p.re));
+        else {
+          out = k;
+          for (const f of FRAG) out = out.replace(f.re, (...m) => fill(f, m));
+        }
+        for (const [re, to] of UNITS) out = out.replace(re, to);
+      }
+      if (cache.size > 3000) cache.clear();
+      cache.set(k, out);
+    }
+    if (out === k) return s;
+    const at = s.indexOf(k);
+    return s.slice(0, at) + out + s.slice(at + k.length);
+  }
+  window.tr = tr;
+
+  /* Times and dates come out in Arabic with Western digits, like the numbers around them, on a 24-hour clock. */
+  if (ar) for (const m of ["toLocaleTimeString", "toLocaleString", "toLocaleDateString"]) {
+    const f = Date.prototype[m];
+    Date.prototype[m] = function (_locales, opts) { return f.call(this, "ar-u-nu-latn-hc-h23", opts); };
+  }
+  if (ar && window.CanvasRenderingContext2D) {   // chart labels drawn on a canvas
+    const f = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (t, ...rest) { return f.call(this, words(String(t)), ...rest); };
+  }
+  if (ar) for (const m of ["alert", "confirm", "prompt"]) {
+    const f = window[m];
+    window[m] = (msg, ...rest) => f.call(window, tr(msg), ...rest);
+  }
+
+  const SKIP = "script,style,textarea,code,[translate=no]" + (T.skip ? "," + T.skip : "");   // T.skip: names people typed
+  const ATTRS = ["title", "aria-label", "placeholder", "alt"];
+  function attrs(e) {
+    for (const a of ATTRS) {
+      const v = e.getAttribute(a);
+      if (v) { const w = tr(v); if (w !== v) e.setAttribute(a, w); }
+    }
+  }
+  function text(n) {
+    const p = n.parentElement;
+    if (!p || p.closest(SKIP)) return;
+    const w = tr(n.nodeValue);
+    if (w !== n.nodeValue) n.nodeValue = w;
+  }
+  function walk(node) {
+    if (node.nodeType === 3) return text(node);
+    if (node.nodeType !== 1) return;
+    if (node.matches(SKIP)) {   // its text stays as written; tooltips and placeholders are still translated
+      if (!node.matches("script,style,[translate=no]")) attrs(node);
+      return;
+    }
+    const b = BLOCKS[norm(node.textContent)];
+    if (b !== undefined && node.children.length && !node.closest("[translate=no]")) { node.innerHTML = b; return; }
+    attrs(node);
+    for (const c of Array.from(node.childNodes)) walk(c);
+  }
+
+  function picker() {
+    const box = document.createElement("label");
+    box.className = "lang-pick";
+    box.setAttribute("translate", "no");
+    box.title = ar ? "اللغة" : "Language";
+    const sel = document.createElement("select");
+    sel.setAttribute("aria-label", ar ? "اللغة" : "Language");
+    for (const [v, name] of [["", ar ? "لغة الجهاز" : "Device language"], ["en", "English"], ["ar", "العربية"]]) {
+      const o = document.createElement("option"); o.value = v; o.textContent = name; sel.append(o);
+    }
+    sel.value = saved || "";
+    sel.addEventListener("change", () => {
+      try { if (sel.value) localStorage.setItem(KEY, sel.value); else localStorage.removeItem(KEY); } catch (e) { /* not kept */ }
+      location.reload();
+    });
+    box.append(Object.assign(document.createElement("span"), {textContent: "🌐", ariaHidden: "true"}), sel);
+    const style = document.createElement("style");
+    style.textContent = `.lang-pick{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--text2,inherit)}
+.lang-pick select{font:inherit;color:inherit;background:var(--surface,transparent);border:1px solid var(--border,#8884);border-radius:7px;padding:2px 4px;cursor:pointer}
+[dir=rtl] svg,[dir=rtl] canvas{direction:ltr}
+${T.css || ""}`;
+    document.head.append(style);
+    const spot = document.querySelector(T.mount || "header") || document.querySelector("main") || document.body;
+    if (T.prepend) {   // on its own line above the page's content
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;justify-content:flex-end;margin-bottom:8px";
+      row.append(box); spot.prepend(row);
+    } else spot.append(box);
+  }
+
+  function start() {
+    picker();
+    if (!ar) return;
+    document.title = tr(document.title);
+    walk(document.body);
+    new MutationObserver(records => {
+      for (const r of records) {
+        if (r.type === "characterData") text(r.target);
+        else if (r.type === "attributes") attrs(r.target);
+        else for (const n of r.addedNodes) walk(n);
+      }
+    }).observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS});
+  }
+  if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
+})();
+</script>
+<!-- /language -->
 <script>
 const $ = id => document.getElementById(id);
 let running = false;        // true when the dashboard is already running (setup opened again from it)

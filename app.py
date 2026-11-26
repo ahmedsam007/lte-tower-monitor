@@ -118,7 +118,7 @@ def main_window(webview):
         threading.Thread(target=lambda: show(base + "/"), daemon=True).start()
     else:
         threading.Thread(target=backend, daemon=True).start()
-    webview.start()
+    webview.start(private_mode=False)   # keep page storage between launches, such as the chosen language
     sys.exit(0)        # window closed: atexit handlers save the day's usage and close the SSH session
 
 

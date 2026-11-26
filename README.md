@@ -60,6 +60,10 @@ Its settings and logs are kept in `~/Library/Application Support/Tower Monitor`.
    The first start installs a few small Python packages (this needs internet, one time only).
 4. **Type the router's password** on the setup page that opens in your browser. Keep the black window open while you use Tower Monitor; closing it stops it.
 
+## Language
+
+The pages are in English and Arabic. They follow your computer's or phone's language; to change it, use the 🌐 menu at the top of the page and pick **English**, **العربية** or **Device language**. Arabic is laid out right to left. Your choice is remembered in that browser.
+
 ## SSH on the DWR-921
 
 Tower Monitor reads the modem through the router's SSH login. The setup page switches SSH on by itself when it's off, the same as ticking **SSH** on the router's **System → Telnet/SSH** page. If that doesn't work on your firmware, the setup page shows you how to do it by hand on the router's web page (usually http://192.168.0.1). The username and password are the ones you use to log in to the router's web page.

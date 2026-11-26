@@ -27,13 +27,13 @@
   h2 { font-size: 14px; margin: 0 0 2px; font-weight: 650; }
   a { color: var(--s1); }
   .sub { color: var(--text2); font-size: 12.5px; }
-  #conn { margin-left: auto; font-size: 12.5px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+  #conn { margin-inline-start: auto; font-size: 12.5px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
   .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; background: var(--muted); }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
-  .banner { display: none; margin-bottom: 14px; border-left: 4px solid var(--critical); }
+  .banner { display: none; margin-bottom: 14px; border-inline-start: 4px solid var(--critical); }
   .banner.show { display: block; }
-  .banner.ok { border-left-color: var(--good); }
-  .banner.work { border-left-color: var(--s1); }
+  .banner.ok { border-inline-start-color: var(--good); }
+  .banner.work { border-inline-start-color: var(--s1); }
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 12px; }
   .tile .label { color: var(--text2); font-size: 12.5px; }
   .tile .value { font-size: 24px; font-weight: 650; line-height: 1.25; margin-top: 2px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
@@ -41,13 +41,13 @@
   .head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 12px; margin-bottom: 8px; }
   .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
   .seg button { font: inherit; font-size: 13px; color: var(--text2); background: none; border: 0; padding: 5px 12px; cursor: pointer; }
-  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button + button { border-inline-start: 1px solid var(--border); }
   .seg button[aria-pressed="true"] { color: var(--text); font-weight: 650; background: color-mix(in srgb, var(--text) 8%, transparent); }
   .tablewrap { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
-  th { text-align: left; color: var(--text2); font-weight: 600; font-size: 12.5px; padding: 6px 8px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
+  th { text-align: start; color: var(--text2); font-weight: 600; font-size: 12.5px; padding: 6px 8px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
   td { padding: 8px; border-bottom: 1px solid var(--grid); vertical-align: middle; white-space: nowrap; }
-  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  td.n, th.n { text-align: end; font-variant-numeric: tabular-nums; }
   tr.off td { color: var(--muted); }
   .name { font-weight: 600; }
   .meta { color: var(--text2); font-size: 12px; }
@@ -55,7 +55,7 @@
   .track { flex: 1; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--fill, var(--muted)) 18%, var(--surface)); overflow: hidden; min-width: 60px; }
   .fill { height: 100%; border-radius: 4px; background: var(--fill, var(--muted)); width: 0; transition: width .4s; }
   .lvl { font-size: 12px; color: var(--text2); width: 62px; }
-  .pill { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 9px; border: 1px solid var(--border); color: var(--text2); margin-right: 4px; }
+  .pill { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 9px; border: 1px solid var(--border); color: var(--text2); margin-inline-end: 4px; }
   .pill.limit { color: var(--text); border-color: var(--warning); }
   .pill.block { color: #fff; background: var(--critical); border-color: var(--critical); }
   .btns { display: flex; gap: 6px; }
@@ -158,6 +158,314 @@
   <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="nmGo">Save</button></div>
 </dialog>
 
+<!-- language: English / Arabic -->
+<script>
+window.I18N = (() => {
+  /* Words that appear joined with " · " in a device's details line. */
+  const tokens = {
+    "Phone": "هاتف", "Tablet": "جهاز لوحي", "Computer": "حاسوب", "TV": "تلفاز", "Wi-Fi access point": "نقطة وصول Wi-Fi",
+    "Game console": "جهاز ألعاب", "TP-Link Wi-Fi": "شبكة TP-Link", "Archer Wi-Fi": "شبكة Archer",
+    "offline": "غير متصل", "Idle": "خامل", "Light": "خفيف", "Busy": "مشغول", "Very busy": "مشغول جدًا",
+  };
+  const extra = Object.entries(tokens).sort((a, b) => b[0].length - a[0].length)
+    .map(([en, a]) => [new RegExp(`(^| · )${en.replace(/[.*+?^$()|[\]\\]/g, "\\$&")}(?= · |$)`, "g"), `$1${a}`]);
+  return {
+    mount: "header",
+    skip: ".name,#tBusy",
+    text: {
+      "Home Devices": "أجهزة المنزل",
+      "Tower Monitor": "مراقب الأبراج",
+      "Connecting…": "جارٍ الاتصال…",
+      "Whole house, download now": "التنزيل الآن، المنزل كله",
+      "Whole house, upload now": "الرفع الآن، المنزل كله",
+      "LTE download · all devices": "تنزيل LTE · كل الأجهزة",
+      "LTE upload · all devices": "رفع LTE · كل الأجهزة",
+      "Updates every 0.5 s": "يتحدّث كل 0.5 ث",
+      "measured on the D-Link's mobile link": "مقيس على اتصال D-Link الخلوي",
+      "Busiest device now": "الجهاز الأكثر نشاطًا الآن",
+      "Devices online": "الأجهزة المتصلة",
+      "Devices": "الأجهزة",
+      "Busiest first. Updates every 10 seconds.": "الأكثر نشاطًا أولًا. يتحدّث كل 10 ثوانٍ.",
+      "Busiest first. This Mac’s speeds update every 0.5 s. Router device statistics update about every 10 s.": "الأكثر نشاطًا أولًا. تتحدّث سرعات هذا الـ Mac كل 0.5 ث، وإحصاءات الأجهزة من جهاز التوجيه كل 10 ث تقريبًا.",
+      "Usage period": "فترة الاستخدام",
+      "Today": "اليوم", "Yesterday": "أمس", "7 days": "7 أيام",
+      "Device": "الجهاز",
+      "Activity now": "النشاط الآن",
+      "Download now": "التنزيل الآن",
+      "Upload now": "الرفع الآن",
+      "Downloaded today": "التنزيل اليوم", "Uploaded today": "الرفع اليوم", "Active today": "النشاط اليوم",
+      "Downloaded yesterday": "التنزيل أمس", "Uploaded yesterday": "الرفع أمس", "Active yesterday": "النشاط أمس",
+      "Downloaded 7 days": "التنزيل خلال 7 أيام", "Uploaded 7 days": "الرفع خلال 7 أيام", "Active 7 days": "النشاط خلال 7 أيام",
+      "Status": "الحالة",
+      "Loading…": "جارٍ التحميل…",
+      "Limit speed": "تحديد السرعة",
+      "Download, Mbit/s": "التنزيل، Mbit/s",
+      "Upload, Mbit/s": "الرفع، Mbit/s",
+      "The device is also given a fixed address on the TP-Link, so the limit stays on it.": "يُمنح الجهاز أيضًا عنوانًا ثابتًا في TP-Link، كي يبقى الحدّ مطبّقًا عليه.",
+      "Cancel": "إلغاء",
+      "Apply limit": "تطبيق الحدّ",
+      "Name this device": "تسمية هذا الجهاز",
+      "Name": "الاسم",
+      "for example: Ahmad's phone": "مثال: هاتف أحمد",
+      "Save": "حفظ",
+      "Nobody": "لا أحد",
+      "all devices are idle": "كل الأجهزة خاملة",
+      "Blocked": "محظور",
+      "maximum download / upload": "الحدّ الأقصى للتنزيل / الرفع",
+      "network equipment": "معدّات شبكة",
+      "Remove limit": "إزالة الحدّ",
+      "Limit…": "تحديد…",
+      "Unblock": "إلغاء الحظر",
+      "Block": "حظر",
+      "Rename": "إعادة التسمية",
+      "No devices seen yet.": "لم يُرصد أي جهاز بعد.",
+      "TP-Link not set up": "TP-Link غير مُعدّ",
+      "TP-Link not reachable": "يتعذّر الوصول إلى TP-Link",
+      "Changing the TP-Link…": "جارٍ التغيير في TP-Link…",
+      "This takes a few seconds.": "يستغرق ذلك بضع ثوانٍ.",
+      "Done": "تم",
+      "Not done": "لم يتم",
+      "Not set up": "غير مُعدّ",
+      "TP-Link not answering": "TP-Link لا يستجيب",
+      "Live": "مباشر",
+      "Monitor not running": "المراقب لا يعمل",
+      "The most this device may use. The others share what is left.": "أقصى ما يمكن لهذا الجهاز استخدامه، وتتقاسم الأجهزة الأخرى ما يتبقّى.",
+      "It stays on the Wi-Fi but cannot reach the internet until you press Unblock. If it is your own computer, you will lose the internet on it.":
+        "يبقى متصلًا بشبكة Wi-Fi لكنه لا يصل إلى الإنترنت حتى تضغط «إلغاء الحظر». إذا كان هذا حاسوبك، فسينقطع عنه الإنترنت.",
+      "It will be able to use the internet again.": "سيتمكّن من استخدام الإنترنت مجددًا.",
+      "It will be able to use the full speed again.": "سيتمكّن من استخدام السرعة الكاملة مجددًا.",
+      "Enter download 0.1–100 and upload 0.05–100 Mbit/s.": "أدخل تنزيلًا بين 0.1 و100 ورفعًا بين 0.05 و100 Mbit/s.",
+      "measured exactly on this computer's network interface (includes traffic inside the house)": "مقيس بدقة على واجهة الشبكة في هذا الحاسوب (يشمل الحركة داخل المنزل)",
+      "This Mac’s network interface, including local traffic": "واجهة الشبكة في هذا الـ Mac، بما فيها حركة الشبكة المحلية",
+      "not measurable: this device is on the Archer Wi-Fi or a cable, where nothing counts its download": "غير قابل للقياس: الجهاز متصل بشبكة Archer أو بكابل، ولا شيء هناك يحسب تنزيله",
+      "estimate: the TP-Link counts this device's download in packets": "تقدير: يحسب TP-Link تنزيل هذا الجهاز بالحزم",
+      "Waiting for a reading from this Mac": "بانتظار قراءة من هذا الـ Mac",
+      "Another change is still running.": "ما زال تغيير آخر قيد التنفيذ.",
+      "Working…": "جارٍ العمل…",
+      "read": "قُرئت", "not read yet": "لم تُقرأ بعد", "not set up": "غير مُعدّة",
+      "The TP-Link router is not set up. To use this page, fill in the \"tplink\" part of config.json and restart Tower Monitor.":
+        "جهاز التوجيه TP-Link غير مُعدّ. لاستخدام هذه الصفحة، املأ قسم \"tplink\" في config.json وأعد تشغيل مراقب الأبراج.",
+    },
+    templates: {
+      "{n} Mbit/s not split per device (Archer Wi-Fi, cables)": "{n} Mbit/s غير موزّعة على الأجهزة (Wi-Fi الخاصة بـ Archer، الكابلات)",
+      "≈ {n} not split per device (Archer Wi-Fi, cables)": "≈ {n} غير موزّعة على الأجهزة (Wi-Fi الخاصة بـ Archer، الكابلات)",
+      "test packets lost (last 2 min): {p}%": "حزم الاختبار المفقودة (آخر دقيقتين): {p}%",
+      "{p}% of test packets lost in the last 2 min": "فُقد {p}% من حزم الاختبار خلال آخر دقيقتين",
+      "{n} known · {l} limited · {b} blocked": "{n} معروف · {l} محدود · {b} محظور",
+      "{n} known · {l} limited": "{n} معروف · {l} محدود",
+      "{n} known · {b} blocked": "{n} معروف · {b} محظور",
+      "{n} known": "{n} معروف",
+      "Limit {d} / {u} Mbit/s": "الحدّ \u2066{d} / {u} Mbit/s\u2069",
+      "{a} packets/s now, {b} average over 5 min": "{a} حزمة/ث الآن، والمتوسط {b} خلال 5 دقائق",
+      "estimate: {p} packets/s received over the TP-Link Wi-Fi; average over 5 min ≈ {r}": "تقدير: {p} حزمة/ث مستلمة عبر Wi-Fi الخاصة بـ TP-Link؛ المتوسط خلال 5 دقائق ≈ {r}",
+      "{r} MB/s on this Mac’s interface, including local traffic": "{r} MB/s على واجهة هذا الـ Mac، بما فيها حركة الشبكة المحلية",
+      "TP-Link read at {t}. Archer C20 Wi-Fi list: {s}.": "قُرئ TP-Link في {t}. قائمة Wi-Fi في Archer C20: {s}.",
+      "not available ({e})": "غير متاحة ({e})",
+      "Limit speed: {n}": "تحديد السرعة: {n}",
+      "Block {n}?": "هل تريد حظر {n}؟",
+      "Unblock {n}?": "هل تريد إلغاء حظر {n}؟",
+      "Remove the limit on {n}?": "هل تريد إزالة الحدّ عن {n}؟",
+      "The device calls itself “{r}”. MAC {m}, IP {i}. Leave empty to use the device's own name.": "يسمّي الجهاز نفسه «{r}». MAC {m}، IP {i}. اتركه فارغًا لاستخدام اسم الجهاز نفسه.",
+      "MAC {m}, IP {i}. Leave empty to use the device's own name.": "MAC {m}، IP {i}. اتركه فارغًا لاستخدام اسم الجهاز نفسه.",
+      "This router cannot limit download directly. To hold the download near {d} Mbit/s, its upload is capped at {c} kbit/s (0.05 Mbit/s is the lowest that still works). The result is approximate: sending photos or videos will be slow, and voice/video calls are limited less.":
+        "لا يستطيع جهاز التوجيه هذا تحديد التنزيل مباشرة. لإبقاء التنزيل قرب {d} Mbit/s، يُحدّ الرفع عند {c} kbit/s (\u200f0.05 Mbit/s هو أدنى حدّ ما زال يعمل). النتيجة تقريبية: سيكون إرسال الصور والفيديو بطيئًا، والمكالمات الصوتية والمرئية تتأثر أقل.",
+      "{n} is now limited to about {d} Mbit/s down (upload capped at {u} kbit/s, which is what holds the download).": "صار {n} محدودًا بنحو {d} Mbit/s للتنزيل (الرفع محدود عند {u} kbit/s، وهذا ما يكبح التنزيل).",
+      "{n} had no limit.": "لم يكن على {n} أي حدّ.",
+      "Limit removed from {n}.": "أُزيل الحدّ عن {n}.",
+      "{n} is blocked from the internet.": "حُظر {n} من الإنترنت.",
+      "{n} can use the internet again.": "يمكن لـ {n} استخدام الإنترنت مجددًا.",
+      "Failed: {e}": "فشل: {e}",
+      "Could not read the TP-Link: {e}": "تعذّرت قراءة TP-Link: {e}",
+    },
+    fragments: {
+      "Access Control on the TP-Link is in 'allow only listed' mode; this page will not change that. Change it on {u} first.":
+        "التحكم بالوصول في TP-Link على وضع «السماح للمدرجين فقط»، ولن تغيّره هذه الصفحة. غيّره أولًا من {u}.",
+      "the TP-Link still lists the limit": "ما زال TP-Link يُدرج الحدّ",
+      "the TP-Link did not save the device entry": "لم يحفظ TP-Link بيانات الجهاز",
+      "the TP-Link still lists the block rule": "ما زال TP-Link يُدرج قاعدة الحظر",
+      "the block did not take effect": "لم يسرِ الحظر",
+    },
+    blocks: {
+      "Everything connected through the TP-Link router · Tower Monitor": 'كل ما يتصل عبر جهاز التوجيه TP-Link · <a href="/">مراقب الأبراج</a>',
+      "Download: how it is measured depends on where the device is connected. The computer running Tower Monitor is measured exactly. For devices on the TP-Link Wi-Fi, the router counts the packets it sends to each one, not the bytes, so the speed is an estimate (marked ≈) that assumes full-size packets and is capped so the total never exceeds the whole-house download. Devices on the Archer Wi-Fi or a cable have no per-device download counter (–); their download is part of the “not split per device” figure on the whole-house tile. Upload comes from the TP-Link's traffic statistics and is exact for every device.":
+        "<b>التنزيل:</b> طريقة قياسه تعتمد على مكان اتصال الجهاز. <b>الحاسوب الذي يشغّل مراقب الأبراج</b> يُقاس بدقة. أما الأجهزة على <b>Wi-Fi الخاصة بـ TP-Link</b> فيحسب جهاز التوجيه <i>الحزم</i> المرسلة إلى كل منها لا البايتات، لذا فالسرعة تقديرية (مُعلَّمة بـ ≈) تفترض حزمًا كاملة الحجم، ومحدودة بحيث لا يتجاوز المجموع تنزيل المنزل كله. الأجهزة على <b>Wi-Fi الخاصة بـ Archer أو المتصلة بكابل</b> ليس لها عدّاد تنزيل خاص (–)، وتنزيلها جزء من رقم «غير موزّعة على الأجهزة» في بطاقة المنزل كله. <b>الرفع</b> مأخوذ من إحصاءات الحركة في TP-Link وهو دقيق لكل جهاز.",
+      "This Mac: live speeds and download totals come from the Mac’s interface counters and include local network traffic. Download totals show bytes accumulated during the selected period. TP-Link Wi-Fi: downloads are estimated from packets (≈). Archer Wi-Fi and wired devices: per-device downloads are unavailable (–). Upload totals and other devices’ upload rates come from the TP-Link’s traffic statistics.":
+        "<b>هذا الـ Mac:</b> السرعات المباشرة ومجاميع التنزيل مأخوذة من عدّادات واجهة الـ Mac وتشمل حركة الشبكة المحلية. تُظهر مجاميع التنزيل البايتات المتراكمة خلال الفترة المختارة. <b>Wi-Fi الخاصة بـ TP-Link:</b> التنزيل مقدَّر من الحزم (≈). <b>Wi-Fi الخاصة بـ Archer والأجهزة السلكية:</b> لا يتوفر تنزيل لكل جهاز (–). مجاميع الرفع وسرعات رفع الأجهزة الأخرى مأخوذة من إحصاءات الحركة في TP-Link.",
+      "Activity now is packets sent per second. A device that downloads heavily also sends many small reply packets, so this column finds busy devices on the Archer too.":
+        "<b>النشاط الآن</b> هو عدد الحزم المرسلة في الثانية. الجهاز الذي ينزّل بكثافة يرسل أيضًا حزم ردّ صغيرة كثيرة، لذا يكشف هذا العمود الأجهزة النشطة على Archer أيضًا.",
+      "Limit sets a maximum speed for one device on the TP-Link (Bandwidth Control). This router enforces only the upload maximum, so the download is held down indirectly by a low upload cap; the download figure is a target, approximately kept. Block stops one device from reaching the internet (Access Control); it stays connected to the Wi-Fi. Both can be undone here, and nothing on the router changes until you press a button.":
+        "<b>التحديد</b> يضع سرعة قصوى لجهاز واحد في TP-Link (التحكم بعرض النطاق). هذا الجهاز يطبّق حدّ <i>الرفع</i> فقط، لذا يُكبح التنزيل بشكل غير مباشر عبر حدّ رفع منخفض؛ ورقم التنزيل هدف يُحافَظ عليه تقريبًا. <b>الحظر</b> يمنع جهازًا واحدًا من الوصول إلى الإنترنت (التحكم بالوصول) مع بقائه متصلًا بشبكة Wi-Fi. يمكن التراجع عن كليهما من هنا، ولا يتغيّر شيء في جهاز التوجيه حتى تضغط زرًا.",
+      "Limit sets a maximum speed for one device on the TP-Link (Bandwidth Control). This router enforces only the upload maximum (tested 2026-11-18), so the download is held down indirectly by a low upload cap; the download figure is a target, approximately kept. Block stops one device from reaching the internet (Access Control); it stays connected to the Wi-Fi. Both can be undone here, and nothing on the router changes until you press a button.":
+        "<b>التحديد</b> يضع سرعة قصوى لجهاز واحد في TP-Link (التحكم بعرض النطاق). هذا الجهاز يطبّق حدّ <i>الرفع</i> فقط (اختُبر في 2026-11-18)، لذا يُكبح التنزيل بشكل غير مباشر عبر حدّ رفع منخفض؛ ورقم التنزيل هدف يُحافَظ عليه تقريبًا. <b>الحظر</b> يمنع جهازًا واحدًا من الوصول إلى الإنترنت (التحكم بالوصول) مع بقائه متصلًا بشبكة Wi-Fi. يمكن التراجع عن كليهما من هنا، ولا يتغيّر شيء في جهاز التوجيه حتى تضغط زرًا.",
+    },
+    extra: [
+      [/(\d[\d.]*) packets\/s\b/g, "$1 حزمة/ث"],
+      ...extra,
+    ],
+  };
+})();
+
+/* Language: English or Arabic. The page is written in English; when Arabic is chosen this block
+   lays the page out right to left and translates what it shows, including what the page builds
+   later and messages from the app, using the table above. Anything not in the table stays English. */
+(() => {
+  "use strict";
+  const KEY = "lang";
+  let saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) { /* storage blocked: follow the device */ }
+  if (saved !== "ar" && saved !== "en") saved = null;
+  const device = /^ar\b/i.test(navigator.language || "") ? "ar" : "en";
+  const lang = saved || device, ar = lang === "ar";
+  const html = document.documentElement;
+  html.lang = lang; html.dir = ar ? "rtl" : "ltr";
+  window.LANG = lang;
+
+  const T = window.I18N || {};
+  const TEXT = T.text || {};
+  const BLOCKS = {};   // whole elements whose English text maps to Arabic markup
+  const norm = s => s.replace(/\s+/g, " ").trim();
+  for (const [en, a] of Object.entries(T.blocks || {})) BLOCKS[norm(en)] = a;
+  const esc = s => s.replace(/[.*+?^$()|[\]\\]/g, "\\$&");
+  const compile = (en, a, whole) => {
+    const names = [];
+    const src = esc(en).replace(/\{(\w+)\}/g, (_, n) => { names.push(n); return "(.+?)"; });
+    return {re: new RegExp(whole ? `^${src}$` : src, whole ? "" : "g"), names, a};
+  };
+  const TPL = Object.entries(T.templates || {}).map(([en, a]) => compile(en, a, true));
+  const FRAG = Object.entries(T.fragments || {}).sort((x, y) => y[0].length - x[0].length).map(([en, a]) => compile(en, a, false));
+  const UNITS = [
+    [/(\d[\d.,]*) ?min\b/g, "$1 د"], [/(\d[\d.,]*) h\b/g, "$1 س"], [/(\d[\d.,]*) s\b/g, "$1 ث"],
+    [/(\d[\d.,]*) km\b/g, "$1 كم"], [/(\d[\d.,]*) m\b/g, "$1 م"], [/(\d[\d.,]*) ?(GB|MB|kB)\b/g, "$1 $2"],
+    ...(T.extra || []),
+  ];
+  // A value like "-88.4 dBm" would read "dBm 88.4-" in right-to-left text; isolate it as left to right.
+  const NUM = /(?:[-+≈<]\s?)?\d[\d.,]*\s?(dBm|dB|ms|Mbps|Mbit\/s|kbit\/s|MB\/s|GB|MB|kB)(?![A-Za-z])/g;
+  const IP = /\b\d{1,3}(?:\.\d{1,3}){3}\b/g;   // addresses too
+  const fill = (p, m) => {
+    let out = p.a;
+    p.names.forEach((n, i) => { out = out.split(`{${n}}`).join(words(m[i + 1])); });
+    return out;
+  };
+  function tr(s) {
+    if (!ar || s == null) return s;
+    s = String(s);
+    if (s.includes("\u2066")) return s;   // already translated
+    const out = words(s);
+    return /\d/.test(out) ? out.replace(NUM, "\u2066$&\u2069") : out;
+  }
+  const cache = new Map();
+  function words(s) {
+    const k = s.trim();
+    if (!k || !/[A-Za-z]/.test(k)) return s;
+    let out = cache.get(k);
+    if (out === undefined) {
+      out = TEXT[k];
+      if (out === undefined) {
+        const p = TPL.find(p => p.re.test(k));
+        if (p) out = fill(p, k.match(p.re));
+        else {
+          out = k;
+          for (const f of FRAG) out = out.replace(f.re, (...m) => fill(f, m));
+        }
+        for (const [re, to] of UNITS) out = out.replace(re, to);
+      }
+      if (cache.size > 3000) cache.clear();
+      cache.set(k, out);
+    }
+    if (out === k) return s;
+    const at = s.indexOf(k);
+    return s.slice(0, at) + out + s.slice(at + k.length);
+  }
+  window.tr = tr;
+
+  /* Times and dates come out in Arabic with Western digits, like the numbers around them, on a 24-hour clock. */
+  if (ar) for (const m of ["toLocaleTimeString", "toLocaleString", "toLocaleDateString"]) {
+    const f = Date.prototype[m];
+    Date.prototype[m] = function (_locales, opts) { return f.call(this, "ar-u-nu-latn-hc-h23", opts); };
+  }
+  if (ar && window.CanvasRenderingContext2D) {   // chart labels drawn on a canvas
+    const f = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (t, ...rest) { return f.call(this, words(String(t)), ...rest); };
+  }
+  if (ar) for (const m of ["alert", "confirm", "prompt"]) {
+    const f = window[m];
+    window[m] = (msg, ...rest) => f.call(window, tr(msg), ...rest);
+  }
+
+  const SKIP = "script,style,textarea,code,[translate=no]" + (T.skip ? "," + T.skip : "");   // T.skip: names people typed
+  const ATTRS = ["title", "aria-label", "placeholder", "alt"];
+  function attrs(e) {
+    for (const a of ATTRS) {
+      const v = e.getAttribute(a);
+      if (v) { const w = tr(v); if (w !== v) e.setAttribute(a, w); }
+    }
+  }
+  function text(n) {
+    const p = n.parentElement;
+    if (!p || p.closest(SKIP)) return;
+    const w = tr(n.nodeValue);
+    if (w !== n.nodeValue) n.nodeValue = w;
+  }
+  function walk(node) {
+    if (node.nodeType === 3) return text(node);
+    if (node.nodeType !== 1) return;
+    if (node.matches(SKIP)) {   // its text stays as written; tooltips and placeholders are still translated
+      if (!node.matches("script,style,[translate=no]")) attrs(node);
+      return;
+    }
+    const b = BLOCKS[norm(node.textContent)];
+    if (b !== undefined && node.children.length && !node.closest("[translate=no]")) { node.innerHTML = b; return; }
+    attrs(node);
+    for (const c of Array.from(node.childNodes)) walk(c);
+  }
+
+  function picker() {
+    const box = document.createElement("label");
+    box.className = "lang-pick";
+    box.setAttribute("translate", "no");
+    box.title = ar ? "اللغة" : "Language";
+    const sel = document.createElement("select");
+    sel.setAttribute("aria-label", ar ? "اللغة" : "Language");
+    for (const [v, name] of [["", ar ? "لغة الجهاز" : "Device language"], ["en", "English"], ["ar", "العربية"]]) {
+      const o = document.createElement("option"); o.value = v; o.textContent = name; sel.append(o);
+    }
+    sel.value = saved || "";
+    sel.addEventListener("change", () => {
+      try { if (sel.value) localStorage.setItem(KEY, sel.value); else localStorage.removeItem(KEY); } catch (e) { /* not kept */ }
+      location.reload();
+    });
+    box.append(Object.assign(document.createElement("span"), {textContent: "🌐", ariaHidden: "true"}), sel);
+    const style = document.createElement("style");
+    style.textContent = `.lang-pick{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--text2,inherit)}
+.lang-pick select{font:inherit;color:inherit;background:var(--surface,transparent);border:1px solid var(--border,#8884);border-radius:7px;padding:2px 4px;cursor:pointer}
+[dir=rtl] svg,[dir=rtl] canvas{direction:ltr}
+${T.css || ""}`;
+    document.head.append(style);
+    const spot = document.querySelector(T.mount || "header") || document.querySelector("main") || document.body;
+    if (T.prepend) {   // on its own line above the page's content
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;justify-content:flex-end;margin-bottom:8px";
+      row.append(box); spot.prepend(row);
+    } else spot.append(box);
+  }
+
+  function start() {
+    picker();
+    if (!ar) return;
+    document.title = tr(document.title);
+    walk(document.body);
+    new MutationObserver(records => {
+      for (const r of records) {
+        if (r.type === "characterData") text(r.target);
+        else if (r.type === "attributes") attrs(r.target);
+        else for (const n of r.addedNodes) walk(n);
+      }
+    }).observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS});
+  }
+  if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
+})();
+</script>
+<!-- /language -->
 <script>
 const $ = id => document.getElementById(id);
 let DATA = null, PERIOD = "today", lastOk = 0;
