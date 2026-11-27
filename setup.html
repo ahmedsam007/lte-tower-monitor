@@ -127,7 +127,7 @@
   </div>
 
   <p class="note" id="note">Your password is saved only on this computer. Tower Monitor talks to the router over your home network; nothing is sent to the internet.</p>
-  <p class="note"><a href="/log">Activity log</a> · <a href="/hotspot">Share public Wi-Fi</a></p>
+  <p class="note"><a href="/log">Activity log</a> · <a href="/hotspot">Share public Wi-Fi</a> · <a href="#about" data-about-link>About</a></p>
 </main>
 <!-- language: English / Arabic -->
 <script>
@@ -356,6 +356,7 @@ ${T.css || ""}`;
 })();
 </script>
 <!-- /language -->
+<script src="/about.js" defer></script>
 <script>
 const $ = id => document.getElementById(id);
 let running = false;        // true when the dashboard is already running (setup opened again from it)

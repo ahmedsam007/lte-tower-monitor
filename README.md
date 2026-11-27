@@ -162,6 +162,10 @@ The one exception to "nothing is sent to the internet" is the **Share public Wi-
 - **Reinstall the packages**: delete the `.venv` folder and start again.
 - **Run it by hand**: `python3 -m pip install --only-binary=:all: -r requirements.txt`, then `python3 app.py` (Windows: `py -3` instead of `python3`).
 
+## Author
+
+Made by **Ahmed Abuammouna**: [ahmedsam.com](https://ahmedsam.com/) · [App Store](https://apps.apple.com/us/developer/ahmed-abuammouna/id1848106301) · [GitHub](https://github.com/ahmedsam007/). The same links are under **About** in the app.
+
 ## License
 
 MIT. See [LICENSE](LICENSE). Use it at your own risk: changing modem settings can leave you without internet until the router is restarted.

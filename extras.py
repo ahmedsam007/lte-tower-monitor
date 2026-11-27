@@ -2,17 +2,27 @@
 
     /log          activity log page        /api/log, /api/log/clear, /api/log/folder
     /hotspot      share a public Wi-Fi     /api/hotspot/status, /start, /stop, /open
+    /about.js     the About box on every page, /api/about/open opens its links in the browser
 """
 import json
 import os
 from urllib.parse import parse_qs, urlparse
 
+import webbrowser
+
 import activity
 import firstrun
 import hotspot
+from version import VERSION
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PAGES = {"/log": "log.html", "/hotspot": "hotspot.html"}
+ABOUT_LINKS = {   # the only addresses /api/about/open will open
+    "website": "https://ahmedsam.com/",
+    "appstore": "https://apps.apple.com/us/developer/ahmed-abuammouna/id1848106301",
+    "github": "https://github.com/ahmedsam007/",
+    "source": "https://github.com/ahmedsam007/lte-tower-monitor",
+}
 
 
 def _send(handler, code, ctype, body):
@@ -58,6 +68,11 @@ def handle_get(handler):
     if u.path == "/i18n.js":
         _send(handler, 200, "text/javascript; charset=utf-8", i18n_js())
         return True
+    if u.path == "/about.js":
+        with open(os.path.join(HERE, "about.js"), encoding="utf-8") as f:
+            body = f.read().replace("__VERSION__", VERSION).encode("utf-8")
+        _send(handler, 200, "text/javascript; charset=utf-8", body)
+        return True
     if u.path in PAGES:
         with open(os.path.join(HERE, PAGES[u.path]), "rb") as f:
             _send(handler, 200, "text/html; charset=utf-8", f.read())
@@ -82,7 +97,7 @@ def handle_get(handler):
 
 def handle_post(handler):
     u = urlparse(handler.path)
-    if not (u.path.startswith("/api/log/") or u.path.startswith("/api/hotspot/")):
+    if not (u.path.startswith("/api/log/") or u.path.startswith("/api/hotspot/") or u.path == "/api/about/open"):
         return False
     # Only this computer's own page, with a JSON body (a form on another site cannot send that).
     if (not firstrun.same_origin(handler.headers)
@@ -101,6 +116,9 @@ def handle_post(handler):
         _json(handler, {"ok": True})
     elif u.path == "/api/log/folder":
         _json(handler, {"ok": activity.open_folder()})
+    elif u.path == "/api/about/open":
+        url = ABOUT_LINKS.get(str(body.get("link")))
+        _json(handler, {"ok": bool(url) and webbrowser.open(url)})
     elif u.path.startswith("/api/hotspot/"):
         _json(handler, hotspot.api(u.path[len("/api/hotspot/"):], body))
     else:

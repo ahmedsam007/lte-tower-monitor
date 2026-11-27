@@ -107,7 +107,7 @@ jobs:
               if curl -s http://127.0.0.1:8765/api/setup/status | grep -q '"needed": true'; then
                 echo "setup page is up ($1)"
                 ok=0
-                for page in /log /hotspot /i18n.js; do
+                for page in /log /hotspot /i18n.js /about.js; do
                   curl -sf "http://127.0.0.1:8765$page" > /dev/null && echo "  $page ok" || { echo "  $page FAILED"; ok=1; }
                 done
                 curl -s http://127.0.0.1:8765/api/log | grep -q 'started' && echo "  activity log ok" || { echo "  activity log FAILED"; ok=1; }

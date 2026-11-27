@@ -13,7 +13,7 @@ a = Analysis(
     [os.path.join(ROOT, "app.py")],
     pathex=[ROOT],
     datas=[(os.path.join(ROOT, f), ".") for f in
-           ("index.html", "devices.html", "setup.html", "log.html", "hotspot.html", "config.example.json")],
+           ("index.html", "devices.html", "setup.html", "log.html", "hotspot.html", "about.js", "config.example.json")],
     hiddenimports=["server", "devices", "archer", "firstrun", "activity", "extras", "hotspot", "version"],
     excludes=["tkinter", "unittest", "pydoc_data", "test"],
     noarchive=False,
@@ -41,6 +41,7 @@ if sys.platform == "darwin":
         version=VERSION,
         info_plist={
             "CFBundleDisplayName": "Tower Monitor",
+            "NSHumanReadableCopyright": "Developed by Ahmed Abuammouna · ahmedsam.com",
             "CFBundleShortVersionString": VERSION,
             "CFBundleVersion": VERSION,
             "LSMinimumSystemVersion": "11.0",
