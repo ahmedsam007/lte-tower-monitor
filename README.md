@@ -24,7 +24,7 @@ It runs on your own computer (Windows or macOS), talks to your routers over your
 | | |
 |---|---|
 | Computer | macOS 11 or newer, or Windows 10/11, on the same network as the router |
-| Python | Only without the Mac app: 3.8 or newer from [python.org](https://www.python.org/downloads/) |
+| Python | Only without the Mac or Windows app: 3.8 or newer from [python.org](https://www.python.org/downloads/) |
 | Router | D-Link DWR-921 (SSH is switched on for you during setup) |
 | Devices page (optional) | TP-Link router with the older blue web interface (tested on TL-WR841HP, firmware 3.15.2). An Archer C20 access point is supported optionally for its Wi-Fi list. |
 
@@ -48,7 +48,20 @@ Nothing else to install: the app has everything inside.
 
 Its settings and logs are kept in `~/Library/Application Support/Tower Monitor`. To change the router password later, use **Router settings** at the top of the dashboard.
 
-### Windows, or Mac without the app
+### Windows: the app (easiest)
+
+Nothing else to install: the app has everything inside.
+
+1. **Download** `Tower-Monitor-windows-setup.exe` from [Releases](../../releases/latest).
+2. **Open it.** Windows may show "Windows protected your PC" (the app isn't signed with a paid certificate). Press **More info**, then **Run anyway**. You only do this once.
+3. Press **Install**. It installs for your Windows account only, so it doesn't ask for an administrator password, and adds Tower Monitor to the Start menu.
+4. **Type the router's password** on the setup page. Tower Monitor finds the router by itself, switches the router's SSH on if it's off, and opens the dashboard.
+
+Its settings and logs are kept in `%APPDATA%\Tower Monitor` (they stay there if you uninstall, so a reinstall keeps your settings). To uninstall: **Settings → Apps → Installed apps → Tower Monitor**.
+
+The app uses Windows' built-in Edge WebView2 for its window. If that is missing, the dashboard opens in your web browser instead.
+
+### Windows or Mac without the app (from source)
 
 1. **Download** this project: the green **Code** button, then **Download ZIP**. Unzip it somewhere you'll keep it, such as Documents.
 2. **Install Python** if you don't have it, from [python.org](https://www.python.org/downloads/).

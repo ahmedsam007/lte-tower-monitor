@@ -317,17 +317,30 @@ def api(path, body, running):
     return {"ok": False, "message": "unknown"}
 
 
+class LocalServer(ThreadingHTTPServer):
+    # On Windows SO_REUSEADDR lets a second copy bind the same port without an error, so both
+    # would listen and the "already running" check below would never fire. Ask for the port
+    # to ourselves instead.
+    allow_reuse_address = os.name != "nt"
+
+    def server_bind(self):
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def local_server(port, handler, *, reuse=None):
     """Bind to localhost. The launcher can reuse an existing monitor or use a free port."""
     try:
-        return ThreadingHTTPServer(("127.0.0.1", port), handler)
+        return LocalServer(("127.0.0.1", port), handler)
     except OSError as e:
-        address_in_use = (errno.EADDRINUSE, getattr(errno, "WSAEADDRINUSE", errno.EADDRINUSE))
-        if reuse is None or e.errno not in address_in_use:
+        address_in_use = (errno.EADDRINUSE, getattr(errno, "WSAEADDRINUSE", errno.EADDRINUSE),
+                          getattr(errno, "WSAEACCES", errno.EACCES), errno.EACCES)
+        if reuse is None or (e.errno not in address_in_use and getattr(e, "winerror", None) not in (10048, 10013)):
             raise
         if reuse(port):
             return None
-        return ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        return LocalServer(("127.0.0.1", 0), handler)
 
 
 def run_until_done(port, on_ready=None, *, reuse=None):

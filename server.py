@@ -976,12 +976,19 @@ def snapshot(range_s):
         }
 
 
-# The Mac's interface counters can be sampled independently of the router.
+# This computer's interface counters can be sampled independently of the router.
 MAC_TRAFFIC_INTERVAL = 0.5
 MAC_TRAFFIC = (0, None)
+try:
+    import psutil as _psutil          # Windows (and Linux) need it to read the counters
+except ImportError:
+    _psutil = None
+LOCAL_TRAFFIC = sys.platform == "darwin" or _psutil is not None
 
 
 def default_mac_interface():
+    if sys.platform != "darwin":
+        return default_interface_by_address()
     try:
         route = subprocess.run(["/sbin/route", "-n", "get", "default"],
                                capture_output=True, text=True, timeout=2)
@@ -989,6 +996,22 @@ def default_mac_interface():
         return None
     match = re.search(r"^\s*interface:\s*(\S+)", route.stdout, re.M)
     return match[1] if match else None
+
+
+def default_interface_by_address():
+    """The network card holding the address this computer uses to reach the router (no packet is sent)."""
+    if _psutil is None:
+        return None
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect((CFG.get("host") or "1.1.1.1", 9))
+            local = s.getsockname()[0]
+        for nic, addrs in _psutil.net_if_addrs().items():
+            if any(a.family == socket.AF_INET and a.address == local for a in addrs):
+                return nic
+    except (OSError, ValueError):
+        pass
+    return None
 
 
 def mac_traffic_poller():
@@ -1048,7 +1071,7 @@ class Handler(BaseHTTPRequestHandler):
             if time.monotonic() - sampled_at > 4 * MAC_TRAFFIC_INTERVAL:
                 rates = None
             self._send(200, "application/json", json.dumps({
-                "supported": sys.platform == "darwin", "rates": rates,
+                "supported": LOCAL_TRAFFIC, "rates": rates,
                 "interval_ms": int(MAC_TRAFFIC_INTERVAL * 1000),
             }).encode())
         elif u.path == "/api/devices":
@@ -1169,7 +1192,7 @@ def main(*, port=None, on_ready=None, reuse=None):
             upgrade_log_header()
         load_log()
         threading.Thread(target=poller, daemon=True).start()
-        if sys.platform == "darwin":
+        if LOCAL_TRAFFIC:
             threading.Thread(target=mac_traffic_poller, daemon=True).start()
         devices.start(CFG, house_down=house_down_bps)
         atexit.register(lambda: devices.POLLER and devices.POLLER.save_now())

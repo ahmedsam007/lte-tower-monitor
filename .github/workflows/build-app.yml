@@ -1,5 +1,5 @@
-# Builds the Tower Monitor Mac app (Apple Silicon and Intel) with Python and all packages inside.
-# Push a tag like v1.0.0 to publish the .dmg files on a GitHub Release; or run it by hand
+# Builds the Tower Monitor Mac app (Apple Silicon and Intel) and Windows installer with Python and all packages inside.
+# Push a tag like v1.0.0 to publish the .dmg and .exe files on a GitHub Release; or run it by hand
 # from the Actions tab to just get the files as downloads.
 name: Build app
 
@@ -32,7 +32,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install build tools
-        run: python -m pip install --disable-pip-version-check --only-binary=:all: --no-binary=proxy-tools -r packaging/requirements-app.txt
+        run: 'python -m pip install --disable-pip-version-check --only-binary=:all: --no-binary=proxy-tools -r packaging/requirements-app.txt'
 
       - name: Build the app
         run: |
@@ -67,3 +67,82 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: Tower-Monitor-mac-${{ matrix.arch }}.dmg
+
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: x64
+
+      - name: Install build tools
+        run: 'python -m pip install --disable-pip-version-check --only-binary=:all: --no-binary=proxy-tools -r packaging/requirements-app.txt'
+
+      - name: Build the app
+        run: |
+          export TOWER_MONITOR_VERSION="${GITHUB_REF_NAME#v}"
+          case "$TOWER_MONITOR_VERSION" in [0-9]*) ;; *) export TOWER_MONITOR_VERSION="0.0.0";; esac
+          echo "TOWER_MONITOR_VERSION=$TOWER_MONITOR_VERSION" >> "$GITHUB_ENV"
+          pyinstaller --noconfirm packaging/TowerMonitor.spec
+
+      # Starts the app the way a user does (its own window), with an empty settings folder,
+      # and waits for the setup page to answer.
+      - name: Check that the app starts its server
+        run: |
+          check() {
+            TOWER_MONITOR_DATA="$RUNNER_TEMP/tm-$2" "$1" &
+            for i in $(seq 1 60); do
+              if curl -s http://127.0.0.1:8765/api/setup/status | grep -q '"needed": true'; then
+                echo "setup page is up ($1)"; taskkill //IM "Tower Monitor.exe" //F //T; sleep 2; return 0
+              fi
+              sleep 1
+            done
+            echo "no answer from $1"; taskkill //IM "Tower Monitor.exe" //F //T; return 1
+          }
+          check "dist/Tower Monitor/Tower Monitor.exe" bare
+
+      - name: Make the installer
+        shell: pwsh
+        run: |
+          $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+            $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          }
+          & $iscc packaging\TowerMonitor.iss
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Check that the installer works
+        run: |
+          ./dist/Tower-Monitor-windows-setup.exe //VERYSILENT //SUPPRESSMSGBOXES //NORESTART //LOG="$RUNNER_TEMP/setup.log"
+          DIR="$(cygpath -u "$LOCALAPPDATA")/Programs/Tower Monitor"
+          APP="$DIR/Tower Monitor.exe"
+          ls -la "$DIR" || { cat "$RUNNER_TEMP/setup.log"; exit 1; }
+          TOWER_MONITOR_DATA="$RUNNER_TEMP/tm-installed" "$APP" &
+          for i in $(seq 1 60); do
+            if curl -s http://127.0.0.1:8765/api/setup/status | grep -q '"needed": true'; then
+              echo "installed app is up"; taskkill //IM "Tower Monitor.exe" //F //T; sleep 2
+              "$DIR/unins000.exe" //VERYSILENT //SUPPRESSMSGBOXES
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "installed app did not answer"; exit 1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tower-Monitor-windows-setup
+          path: dist/Tower-Monitor-windows-setup.exe
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Tower-Monitor-windows-setup.exe

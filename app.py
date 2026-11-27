@@ -122,8 +122,16 @@ def main_window(webview):
     window = webview.create_window(APP_NAME, html=LOADING, width=1220, height=860, min_size=(420, 560),
                                    text_select=True)
 
+    shown = {"url": None, "browser": False}
+
     def show(url):
-        window.load_url(url)
+        shown["url"] = url
+        if not shown["browser"]:
+            try:
+                return window.load_url(url)
+            except Exception:  # noqa: BLE001  (window never appeared: fall back below)
+                shown["browser"] = True
+        webbrowser.open(url)
 
     def backend():
         try:
@@ -133,8 +141,21 @@ def main_window(webview):
         except Exception as e:  # noqa: BLE001
             window.load_html(error_page(f"Tower Monitor could not start: {e}"))
 
-    threading.Thread(target=backend, daemon=True).start()
-    webview.start(private_mode=False)   # keep page storage between launches, such as the chosen language
+    worker = threading.Thread(target=backend, daemon=True)
+    worker.start()
+    try:
+        webview.start(private_mode=False)   # keep page storage between launches, such as the chosen language
+    except Exception:  # noqa: BLE001
+        # No usable window engine (on Windows: the WebView2 runtime is missing or broken).
+        # Keep running and show the pages in the web browser instead.
+        already, shown["browser"] = shown["browser"], True
+        if shown["url"] and not already:
+            webbrowser.open(shown["url"])
+        try:
+            while worker.is_alive():
+                worker.join(1)
+        except KeyboardInterrupt:
+            pass
     sys.exit(0)        # window closed: atexit handlers save the day's usage and close the SSH session
 
 
