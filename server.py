@@ -20,6 +20,7 @@ import shutil
 import signal
 import socket
 import statistics
+import subprocess
 import sys
 import threading
 import urllib.error
@@ -28,7 +29,7 @@ import urllib.request
 import time
 import webbrowser
 from collections import deque
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))       # program files (pages, example config)
@@ -975,6 +976,46 @@ def snapshot(range_s):
         }
 
 
+# The Mac's interface counters can be sampled independently of the router.
+MAC_TRAFFIC_INTERVAL = 0.5
+MAC_TRAFFIC = (0, None)
+
+
+def default_mac_interface():
+    try:
+        route = subprocess.run(["/sbin/route", "-n", "get", "default"],
+                               capture_output=True, text=True, timeout=2)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    match = re.search(r"^\s*interface:\s*(\S+)", route.stdout, re.M)
+    return match[1] if match else None
+
+
+def mac_traffic_poller():
+    global MAC_TRAFFIC
+    interface, route_checked = None, float("-inf")
+    previous, previous_interface, previous_at = None, None, 0
+    while True:
+        started = time.monotonic()
+        if started - route_checked >= 5:
+            interface, route_checked = default_mac_interface(), started
+        current = devices.local_interfaces().get(interface)
+        sampled_at = time.monotonic()
+        elapsed = sampled_at - previous_at
+        rates = None
+        if (current and previous and interface == previous_interface and current[0] == previous[0]
+                and MAC_TRAFFIC_INTERVAL / 2 <= elapsed <= 4 * MAC_TRAFFIC_INTERVAL):
+            down, up = (
+                (after - before) / elapsed / 1e6
+                if before is not None and after is not None and after >= before else None
+                for before, after in zip(previous[1:], current[1:])
+            )
+            rates = {"interface": interface, "down_mb_s": down, "up_mb_s": up}
+        MAC_TRAFFIC = sampled_at, rates
+        previous, previous_interface, previous_at = current, interface, sampled_at
+        time.sleep(max(0, MAC_TRAFFIC_INTERVAL - (sampled_at - started)))
+
+
 # ----------------------------------------------------------------------- HTTP
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
@@ -1002,6 +1043,14 @@ class Handler(BaseHTTPRequestHandler):
         elif u.path == "/devices":
             with open(os.path.join(HERE, "devices.html"), "rb") as f:
                 self._send(200, "text/html; charset=utf-8", f.read())
+        elif u.path == "/api/mac-traffic":
+            sampled_at, rates = MAC_TRAFFIC
+            if time.monotonic() - sampled_at > 4 * MAC_TRAFFIC_INTERVAL:
+                rates = None
+            self._send(200, "application/json", json.dumps({
+                "supported": sys.platform == "darwin", "rates": rates,
+                "interval_ms": int(MAC_TRAFFIC_INTERVAL * 1000),
+            }).encode())
         elif u.path == "/api/devices":
             snap = devices.snapshot()
             with LOCK:
@@ -1107,26 +1156,34 @@ def house_down_bps():
     return r[9] * 1e6 if r else None
 
 
-def main():
+def main(*, port=None, on_ready=None, reuse=None):
     if threading.current_thread() is threading.main_thread():   # the app runs this in a thread
         signal.signal(signal.SIGTERM, lambda *a: sys.exit(0))   # so the SSH session is closed on kill too
-    if not DRY_RUN:
-        upgrade_log_header()
-    load_log()
-    threading.Thread(target=poller, daemon=True).start()
-    devices.start(CFG, house_down=house_down_bps)
-    atexit.register(lambda: devices.POLLER and devices.POLLER.save_now())
-    port = int(CFG.get("listen_port", 8765)) + (1 if DRY_RUN else 0)
-    srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    url = f"http://127.0.0.1:{port}"
-    print(f"Tower Monitor is running at {url}  (press Ctrl+C to stop)"
-          + ("\nDRY RUN: lock commands are shown but not sent to the modem; nothing is logged." if DRY_RUN else ""))
-    if "--no-open" not in sys.argv:
-        threading.Timer(1.0, lambda: webbrowser.open(url)).start()
-    try:
-        srv.serve_forever()
-    except KeyboardInterrupt:
-        print("\nStopped.")
+    if port is None:
+        port = int(CFG.get("listen_port", 8765)) + (1 if DRY_RUN else 0)
+    srv = firstrun.local_server(port, Handler, reuse=reuse)
+    if srv is None:
+        return
+    with srv:
+        if not DRY_RUN:
+            upgrade_log_header()
+        load_log()
+        threading.Thread(target=poller, daemon=True).start()
+        if sys.platform == "darwin":
+            threading.Thread(target=mac_traffic_poller, daemon=True).start()
+        devices.start(CFG, house_down=house_down_bps)
+        atexit.register(lambda: devices.POLLER and devices.POLLER.save_now())
+        url = f"http://127.0.0.1:{srv.server_port}"
+        print(f"Tower Monitor is running at {url}  (press Ctrl+C to stop)"
+              + ("\nDRY RUN: lock commands are shown but not sent to the modem; nothing is logged." if DRY_RUN else ""))
+        if on_ready:
+            on_ready(url + "/")
+        elif "--no-open" not in sys.argv:
+            threading.Timer(1.0, lambda: webbrowser.open(url)).start()
+        try:
+            srv.serve_forever()
+        except KeyboardInterrupt:
+            print("\nStopped.")
 
 
 if __name__ == "__main__":

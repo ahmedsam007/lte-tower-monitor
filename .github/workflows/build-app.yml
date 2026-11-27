@@ -32,7 +32,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install build tools
-        run: python -m pip install --disable-pip-version-check --only-binary=:all: -r packaging/requirements-app.txt
+        run: python -m pip install --disable-pip-version-check --only-binary=:all: --no-binary=proxy-tools -r packaging/requirements-app.txt
 
       - name: Build the app
         run: |

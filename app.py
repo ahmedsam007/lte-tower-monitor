@@ -9,12 +9,11 @@ next to the program, as before.
     python3 app.py              normal start
     python3 app.py --dry-run    try the buttons without changing the modem (port 8766)
 """
+import http.client
 import json
 import os
 import sys
 import threading
-import time
-import urllib.request
 import webbrowser
 
 APP_NAME = "Tower Monitor"
@@ -48,45 +47,66 @@ def listen_port():
     return port + (1 if DRY_RUN else 0)
 
 
-def answering(url, timeout=1.5):
-    try:
-        with urllib.request.urlopen(url + "/api/setup/status", timeout=timeout) as r:
-            return "running" in json.loads(r.read())
-    except (OSError, ValueError):
-        return False
+def existing_page(port):
+    """Find another Tower Monitor on this port, including versions without setup."""
+    def status(path):
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=1)
+        try:
+            conn.request("GET", path)
+            response = conn.getresponse()
+            if response.status == 200:
+                data = json.loads(response.read(1_000_000))
+                if isinstance(data, dict):
+                    return data
+        except (OSError, ValueError, http.client.HTTPException):
+            pass
+        finally:
+            conn.close()
+        return {}
+
+    base = f"http://127.0.0.1:{port}"
+    setup = status("/api/setup/status")
+    if (isinstance(setup.get("running"), bool) and isinstance(setup.get("needed"), bool)
+            and isinstance(setup.get("data_dir"), str)):
+        return base + ("/" if setup["running"] else "/setup")
+
+    dashboard = status("/api/status?range=300")
+    if (dashboard.get("dry_run") is DRY_RUN and isinstance(dashboard.get("router"), dict)
+            and isinstance(dashboard.get("history"), list) and isinstance(dashboard.get("action"), dict)):
+        return base + "/"
+    return None
 
 
 def run_backend(show):
     """Setup if needed, then the dashboard. `show(url)` puts a page in front of the user."""
+    def reuse(port):
+        url = existing_page(port)
+        if url is None:
+            return False
+        show(url)
+        return True
+
     port = listen_port()
-    base = f"http://127.0.0.1:{port}"
+    setup_url = None
     if firstrun.needed():
-        firstrun.run_until_done(port, on_ready=show)
-        port = listen_port()          # the saved settings may name another port
-        base = f"http://127.0.0.1:{port}"
-    else:
-        threading.Thread(target=_show_when_up, args=(base, show), daemon=True).start()
-    if "--no-open" not in sys.argv:
-        sys.argv.append("--no-open")  # this file opens the page, not server.py
+        setup_port = firstrun.run_until_done(port, on_ready=show, reuse=reuse)
+        if setup_port is None:
+            return  # The window or browser is showing another copy.
+        setup_url = f"http://127.0.0.1:{setup_port}/"
+        configured_port = listen_port()
+        port = setup_port if configured_port == port else configured_port
+
+    def dashboard_ready(url):
+        # The setup page already waits for the dashboard on its own origin.
+        if url != setup_url:
+            show(url)
+
     import server
-    server.main()
-
-
-def _show_when_up(base, show):
-    for _ in range(100):
-        if answering(base, 0.5):
-            return show(base + "/")
-        time.sleep(0.2)
-    show(base + "/")
+    server.main(port=port, on_ready=dashboard_ready, reuse=reuse)
 
 
 def main_browser():
     """Script start: pages open in the web browser."""
-    base = f"http://127.0.0.1:{listen_port()}"
-    if answering(base):
-        print(f"Tower Monitor is already running at {base}")
-        webbrowser.open(base + "/")
-        return
     def show(url):
         print(f"Tower Monitor: {url}", flush=True)
         if "--no-open" not in sys.argv:
@@ -99,7 +119,6 @@ def main_browser():
 
 def main_window(webview):
     """App start: pages show in Tower Monitor's own window. Closing the window quits."""
-    base = f"http://127.0.0.1:{listen_port()}"
     window = webview.create_window(APP_NAME, html=LOADING, width=1220, height=860, min_size=(420, 560),
                                    text_select=True)
 
@@ -114,10 +133,7 @@ def main_window(webview):
         except Exception as e:  # noqa: BLE001
             window.load_html(error_page(f"Tower Monitor could not start: {e}"))
 
-    if answering(base):              # another copy is already serving: just show it
-        threading.Thread(target=lambda: show(base + "/"), daemon=True).start()
-    else:
-        threading.Thread(target=backend, daemon=True).start()
+    threading.Thread(target=backend, daemon=True).start()
     webview.start(private_mode=False)   # keep page storage between launches, such as the chosen language
     sys.exit(0)        # window closed: atexit handlers save the day's usage and close the SSH session
 

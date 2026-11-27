@@ -331,8 +331,8 @@ def add_down_usage(mac, down_bytes, src):
         u["down_est"] = True
 
 
-def local_counters():
-    """{mac: bytes received} for this computer's own network interfaces (exact)."""
+def local_interfaces():
+    """Return interface names mapped to (MAC address, bytes received, bytes sent)."""
     try:
         import psutil
     except ImportError:
@@ -346,12 +346,12 @@ def local_counters():
                     if a.family == psutil.AF_LINK and nic in io:
                         mac = norm_mac(a.address)
                         if mac and mac != "00-00-00-00-00-00":
-                            res[mac] = res.get(mac, 0) + io[nic].bytes_recv
+                            res[nic] = (mac, io[nic].bytes_recv, io[nic].bytes_sent)
             return res
         except Exception:
             return {}
     try:   # macOS without psutil
-        out = subprocess.run(["netstat", "-ibn"], capture_output=True, text=True, timeout=5).stdout
+        out = subprocess.run(["/usr/sbin/netstat", "-ibn"], capture_output=True, text=True, timeout=5).stdout
     except (OSError, subprocess.SubprocessError):
         return {}
     res = {}
@@ -361,7 +361,15 @@ def local_counters():
         if len(f) >= 10 and f[2].startswith("<Link#") and re.fullmatch(r"[0-9a-fA-F:]{11,17}", f[3]):
             mac = norm_mac("".join(p.zfill(2) for p in f[3].split(":")))
             if mac and f[6].isdigit():
-                res[mac] = res.get(mac, 0) + int(f[6])
+                res[f[0]] = (mac, int(f[6]), int(f[9]) if f[9].isdigit() else None)
+    return res
+
+
+def local_counters():
+    """Return download byte counters by MAC address for device statistics."""
+    res = {}
+    for mac, received, _ in local_interfaces().values():
+        res[mac] = res.get(mac, 0) + received
     return res
 
 

@@ -36,6 +36,7 @@
   .banner { display: none; margin-bottom: 14px; border-inline-start: 4px solid var(--critical); }
   .banner.show { display: block; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .tiles.with-mac-speed { grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); }
   .tile .label { color: var(--text2); font-size: 12.5px; }
   .tile .value { font-size: 24px; font-weight: 650; line-height: 1.25; margin-top: 2px; overflow-wrap: anywhere; }
   .tile .value.small { font-size: 18px; }
@@ -148,10 +149,14 @@
   <section class="tiles">
     <div class="card tile"><div class="label">Connected tower</div><div class="value" id="kTower">–</div><div class="note" id="kTowerNote">&nbsp;</div></div>
     <div class="card tile"><div class="label">Internet</div><div class="value small"><span class="state"><span class="dot" id="kNetDot"></span><span id="kNet">–</span></span></div><div class="note" id="kNetNote">&nbsp;</div></div>
-    <div class="card tile"><div class="label">Speed in use now</div>
+    <div class="card tile"><div class="label">Whole-house speed</div>
       <div class="speed"><span class="dir">Download</span><span class="num" id="kDown">–</span></div>
       <div class="speed"><span class="dir">Upload</span><span class="num" id="kUp">–</span></div>
-      <div class="note" id="kSpeedNote">Mbps, all devices together</div></div>
+      <div class="note">Mbps · LTE link</div></div>
+    <div class="card tile" id="macSpeed" hidden><div class="label">This Mac</div>
+      <div class="speed"><span class="dir">Download</span><span class="num" id="kMacDown">–</span></div>
+      <div class="speed"><span class="dir">Upload</span><span class="num" id="kMacUp">–</span></div>
+      <div class="note" id="kMacNote">MB/s · includes local traffic</div></div>
     <div class="card tile"><div class="label">Network</div><div class="value small" id="kOp">–</div><div class="note" id="kOpNote">&nbsp;</div></div>
     <div class="card tile"><div class="label">Tower lock</div><div class="value small" id="kLock">–</div><div class="note" id="kLockNote">&nbsp;</div><button class="btn" id="unlockBtn" type="button" style="display:none;margin-top:8px">Remove lock</button></div>
     <div class="card tile"><div class="label">Tower switches</div><div class="value" id="kSw">–</div><div class="note" id="kSwNote">&nbsp;</div></div>
@@ -1178,6 +1183,32 @@ $("tableBtn").addEventListener("click", () => {
 });
 let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => data && renderCharts(), 150); });
 refresh();
+
+async function refreshMacSpeed() {
+  const started = performance.now();
+  let interval = 500;
+  let rates;
+  try {
+    const response = await fetch("/api/mac-traffic", {
+      cache: "no-store", signal: AbortSignal.timeout(2000)
+    });
+    if (!response.ok) throw new Error("Mac traffic readings unavailable");
+    const reading = await response.json();
+    if (!reading.supported) return;
+    $("macSpeed").hidden = false;
+    $("macSpeed").parentElement.classList.add("with-mac-speed");
+    interval = reading.interval_ms;
+    rates = reading.rates;
+  } catch {
+    rates = null;
+  }
+  $("kMacDown").textContent = fmtSpeed(rates?.down_mb_s);
+  $("kMacUp").textContent = fmtSpeed(rates?.up_mb_s);
+  $("kMacNote").textContent = rates?.interface ?
+    `MB/s · ${rates.interface} · includes local traffic` : "MB/s · includes local traffic";
+  setTimeout(refreshMacSpeed, Math.max(0, interval - (performance.now() - started)));
+}
+refreshMacSpeed();
 </script>
 </body>
 </html>

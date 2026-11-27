@@ -9,6 +9,7 @@ the same change as ticking SSH on the router's System > Telnet/SSH page. Everyth
 stays on the local network; nothing is sent to the internet.
 """
 import concurrent.futures
+import errno
 import http.cookiejar
 import json
 import os
@@ -316,8 +317,21 @@ def api(path, body, running):
     return {"ok": False, "message": "unknown"}
 
 
-def run_until_done(port, on_ready=None):
-    """Serve only the setup page until config.json is saved. Used on the first start."""
+def local_server(port, handler, *, reuse=None):
+    """Bind to localhost. The launcher can reuse an existing monitor or use a free port."""
+    try:
+        return ThreadingHTTPServer(("127.0.0.1", port), handler)
+    except OSError as e:
+        address_in_use = (errno.EADDRINUSE, getattr(errno, "WSAEADDRINUSE", errno.EADDRINUSE))
+        if reuse is None or e.errno not in address_in_use:
+            raise
+        if reuse(port):
+            return None
+        return ThreadingHTTPServer(("127.0.0.1", 0), handler)
+
+
+def run_until_done(port, on_ready=None, *, reuse=None):
+    """Serve setup until config.json is saved and return the port used for setup."""
     done = threading.Event()
 
     class Handler(BaseHTTPRequestHandler):
@@ -361,14 +375,19 @@ def run_until_done(port, on_ready=None):
             if p.endswith("/connect") and res.get("ok"):
                 done.set()
 
-    srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
-    if on_ready:
-        on_ready(f"http://127.0.0.1:{port}/setup")
-    done.wait()
-    time.sleep(0.5)          # let the last answer reach the page
-    srv.shutdown()
-    srv.server_close()
+    srv = local_server(port, Handler, reuse=reuse)
+    if srv is None:
+        return None
+    with srv:
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            if on_ready:
+                on_ready(f"http://127.0.0.1:{srv.server_port}/setup")
+            done.wait()
+            time.sleep(0.5)          # let the last answer reach the page
+        finally:
+            srv.shutdown()
+    return srv.server_port
 
 
 if __name__ == "__main__":
