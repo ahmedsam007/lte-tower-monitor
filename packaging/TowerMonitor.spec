@@ -5,14 +5,16 @@ import os
 import sys
 
 ROOT = os.path.abspath(os.path.join(SPECPATH, ".."))
-VERSION = os.environ.get("TOWER_MONITOR_VERSION", "1.0.0")
+sys.path.insert(0, ROOT)
+from version import VERSION as _SOURCE_VERSION  # noqa: E402
+VERSION = os.environ.get("TOWER_MONITOR_VERSION") or _SOURCE_VERSION
 
 a = Analysis(
     [os.path.join(ROOT, "app.py")],
     pathex=[ROOT],
     datas=[(os.path.join(ROOT, f), ".") for f in
-           ("index.html", "devices.html", "setup.html", "config.example.json")],
-    hiddenimports=["server", "devices", "archer", "firstrun"],
+           ("index.html", "devices.html", "setup.html", "log.html", "hotspot.html", "config.example.json")],
+    hiddenimports=["server", "devices", "archer", "firstrun", "activity", "extras", "hotspot", "version"],
     excludes=["tkinter", "unittest", "pydoc_data", "test"],
     noarchive=False,
 )

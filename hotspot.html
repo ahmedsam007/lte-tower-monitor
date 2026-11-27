@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Share public Wi-Fi</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --text: #0b0b0b; --text2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --good: #0ca30c; --warning: #fab219; --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --text: #f0efec; --text2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --border: rgba(255,255,255,0.10); --s1: #3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text);
+         font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 680px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-bottom: 14px; }
+  h1 { font-size: 20px; margin: 0; font-weight: 650; }
+  h2 { font-size: 15px; margin: 0 0 4px; font-weight: 650; }
+  a { color: var(--s1); }
+  .sub { color: var(--text2); font-size: 12.5px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+  .status { display: flex; align-items: center; gap: 10px; }
+  .status .grow { flex: 1; min-width: 0; }
+  .status b { display: block; font-size: 15px; }
+  #netSub span { display: block; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; background: var(--muted); }
+  .dot.ready { background: var(--good); } .dot.signIn, .dot.limited { background: var(--warning); }
+  .dot.disconnected { background: var(--critical); }
+  .num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%;
+         background: color-mix(in srgb, var(--s1) 14%, var(--surface)); color: var(--s1); font-size: 12.5px; font-weight: 700;
+         margin-inline-end: 8px; flex: none; }
+  .step h2 { display: flex; align-items: center; }
+  .detail { color: var(--text2); margin: 0; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .btn { font: inherit; font-size: 13.5px; padding: 7px 14px; border-radius: 8px; cursor: pointer;
+         border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+  .btn.primary { background: var(--s1); border-color: var(--s1); color: #fff; }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .linkbtn { font: inherit; font-size: 13px; background: none; border: 0; color: var(--s1); cursor: pointer; padding: 0; }
+  .hs { margin-top: 12px; padding: 12px; border-radius: 8px; background: color-mix(in srgb, var(--text) 5%, transparent); }
+  .hs dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
+  .hs dt { color: var(--text2); font-size: 13px; }
+  .hs dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+  .state-on { color: var(--good); } .state-off { color: var(--text2); }
+  .msg { margin: 10px 0 0; font-size: 13px; }
+  .msg.bad { color: var(--critical); }
+  .note { color: var(--text2); font-size: 12.5px; margin: 10px 0 0; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Share public Wi-Fi</h1>
+    <a href="/" class="sub" style="color:var(--s1)">Tower Monitor</a>
+    <a href="/log" class="sub" style="color:var(--s1)">Activity log</a>
+  </header>
+  <p class="sub" style="margin:0 0 14px">Use one public Wi-Fi login (the card with a username and password) on this computer, and let your phone or other devices use it through this computer.</p>
+
+  <section class="card status" aria-live="polite">
+    <span class="dot" id="dot"></span>
+    <div class="grow"><b id="netText">Checking the internet…</b><span class="sub" id="netSub"></span></div>
+    <button class="btn" id="recheck" type="button">Check again</button>
+  </section>
+
+  <section class="card step">
+    <h2><span class="num">1</span>Join and sign in</h2>
+    <p class="detail" id="joinText">Join the public Wi-Fi. If a sign-in page opens, enter the username and password from your card there.</p>
+    <div class="btns">
+      <button class="btn" type="button" data-open="wifi">Open Wi-Fi settings</button>
+      <button class="btn" type="button" data-open="signin" id="signinBtn">Open the sign-in page</button>
+    </div>
+  </section>
+
+  <section class="card step" id="shareWin" hidden>
+    <h2><span class="num">2</span>Turn on Mobile Hotspot</h2>
+    <p class="detail">Windows shares the connection this computer uses for the internet, over the same Wi-Fi card. Most Wi-Fi cards can do both at once.</p>
+    <div class="hs" id="hsBox" hidden>
+      <dl>
+        <dt>Mobile Hotspot</dt><dd id="hsState">–</dd>
+        <dt>Network name</dt><dd id="hsName" translate="no">–</dd>
+        <dt>Password</dt><dd id="hsPass" translate="no">–</dd>
+        <dt>Devices connected</dt><dd id="hsClients">–</dd>
+      </dl>
+    </div>
+    <div class="btns">
+      <button class="btn primary" type="button" id="hsToggle" disabled>Turn on Mobile Hotspot</button>
+      <button class="btn" type="button" data-open="hotspot">Change name or password</button>
+    </div>
+    <p class="msg" id="hsMsg" hidden></p>
+  </section>
+
+  <section class="card step" id="shareMac" hidden>
+    <h2><span class="num">2</span>Share it from this Mac</h2>
+    <p class="detail">A Mac can't send a Wi-Fi connection back out over its own Wi-Fi. It can share it with a device on a cable (Ethernet, USB or Thunderbolt): in <b>Internet Sharing</b>, share your connection from <b>Wi-Fi</b> to that cable port, then turn Internet Sharing on. To share over Wi-Fi, use an Android phone or a Windows computer instead.</p>
+    <div class="btns">
+      <button class="btn" type="button" data-open="hotspot">Open Sharing settings</button>
+    </div>
+  </section>
+
+  <section class="card step" id="shareOther" hidden>
+    <h2><span class="num">2</span>Share it</h2>
+    <p class="detail">Sharing can be switched on here on Windows. On this computer, use its own network settings.</p>
+  </section>
+
+  <section class="card step">
+    <h2><span class="num">3</span>Connect the other device</h2>
+    <p class="detail" id="connectText">On the phone or other computer, join the network name shown above with its password. Open a website on it to check that it works. Some public Wi-Fi providers limit sharing or the number of devices.</p>
+  </section>
+
+  <p class="note" id="privacy">To check the internet, this page uses Windows' own check (the same one behind the network icon on the taskbar).</p>
+</main>
+
+<script src="/i18n.js"></script>
+<!-- language: English / Arabic -->
+<script>
+window.I18N = (() => {
+  const own = {
+    mount: "header",
+    blocks: {
+      "A Mac can't send a Wi-Fi connection back out over its own Wi-Fi. It can share it with a device on a cable (Ethernet, USB or Thunderbolt): in Internet Sharing, share your connection from Wi-Fi to that cable port, then turn Internet Sharing on. To share over Wi-Fi, use an Android phone or a Windows computer instead.":
+        "لا يستطيع الـ Mac إعادة بثّ اتصال Wi-Fi عبر بطاقة Wi-Fi نفسها. يمكنه مشاركته مع جهاز موصول بكابل (Ethernet أو USB أو Thunderbolt): في <b>مشاركة الإنترنت</b>، شارك اتصالك من <b>Wi-Fi</b> إلى منفذ ذلك الكابل، ثم شغّل مشاركة الإنترنت. للمشاركة عبر Wi-Fi استخدم هاتف Android أو حاسوب Windows بدلًا من ذلك.",
+    },
+    text: {
+      "Share public Wi-Fi": "مشاركة Wi-Fi العامة",
+      "Tower Monitor": "مراقب الأبراج",
+      "Activity log": "سجل النشاط",
+      "Use one public Wi-Fi login (the card with a username and password) on this computer, and let your phone or other devices use it through this computer.":
+        "استخدم تسجيل دخول واحدًا لشبكة Wi-Fi العامة (البطاقة التي عليها اسم مستخدم وكلمة مرور) على هذا الحاسوب، ودَع هاتفك أو أجهزتك الأخرى تستخدمه عبر هذا الحاسوب.",
+      "Checking the internet…": "جارٍ فحص الإنترنت…",
+      "Check again": "افحص مجددًا",
+      "Join and sign in": "انضم وسجّل الدخول",
+      "Join the public Wi-Fi. If a sign-in page opens, enter the username and password from your card there.":
+        "انضم إلى شبكة Wi-Fi العامة. إذا فُتحت صفحة تسجيل دخول، أدخل فيها اسم المستخدم وكلمة المرور من بطاقتك.",
+      "Join the public Wi-Fi from the network icon on the taskbar. If a sign-in page opens, enter the username and password from your card there.":
+        "انضم إلى شبكة Wi-Fi العامة من أيقونة الشبكة في شريط المهام. إذا فُتحت صفحة تسجيل دخول، أدخل فيها اسم المستخدم وكلمة المرور من بطاقتك.",
+      "Join the public Wi-Fi from the Wi-Fi icon in the menu bar. If a sign-in page opens, enter the username and password from your card there.":
+        "انضم إلى شبكة Wi-Fi العامة من أيقونة Wi-Fi في شريط القوائم. إذا فُتحت صفحة تسجيل دخول، أدخل فيها اسم المستخدم وكلمة المرور من بطاقتك.",
+      "Open Wi-Fi settings": "فتح إعدادات Wi-Fi",
+      "Open the sign-in page": "فتح صفحة تسجيل الدخول",
+      "Turn on Mobile Hotspot": "تشغيل نقطة الاتصال المحمولة",
+      "Turn off Mobile Hotspot": "إيقاف نقطة الاتصال المحمولة",
+      "Turning on…": "جارٍ التشغيل…",
+      "Turning off…": "جارٍ الإيقاف…",
+      "Windows shares the connection this computer uses for the internet, over the same Wi-Fi card. Most Wi-Fi cards can do both at once.":
+        "يشارك Windows الاتصال الذي يستخدمه هذا الحاسوب للإنترنت، عبر بطاقة Wi-Fi نفسها. معظم بطاقات Wi-Fi تستطيع القيام بالأمرين معًا.",
+      "Mobile Hotspot": "نقطة الاتصال المحمولة",
+      "Network name": "اسم الشبكة",
+      "Password": "كلمة المرور",
+      "Devices connected": "الأجهزة المتصلة",
+      "On": "قيد التشغيل", "Off": "متوقفة", "Changing…": "جارٍ التغيير…",
+      "Change name or password": "تغيير الاسم أو كلمة المرور",
+      "Share it from this Mac": "شاركها من هذا الـ Mac",
+      "Open Sharing settings": "فتح إعدادات المشاركة",
+      "Share it": "شاركها",
+      "Sharing can be switched on here on Windows. On this computer, use its own network settings.":
+        "يمكن تشغيل المشاركة من هنا على Windows. على هذا الحاسوب استخدم إعدادات الشبكة الخاصة به.",
+      "Connect the other device": "صِل الجهاز الآخر",
+      "On the phone or other computer, join the network name shown above with its password. Open a website on it to check that it works. Some public Wi-Fi providers limit sharing or the number of devices.":
+        "على الهاتف أو الحاسوب الآخر، انضم إلى اسم الشبكة الظاهر أعلاه بكلمة مرورها. افتح أي موقع عليه للتأكد من أنه يعمل. قد يحدّ بعض مزوّدي Wi-Fi العامة من المشاركة أو من عدد الأجهزة.",
+      "On the phone or other computer, connect the cable, then open a website on it to check that it works. Some public Wi-Fi providers limit sharing or the number of devices.":
+        "على الهاتف أو الحاسوب الآخر، صِل الكابل ثم افتح أي موقع عليه للتأكد من أنه يعمل. قد يحدّ بعض مزوّدي Wi-Fi العامة من المشاركة أو من عدد الأجهزة.",
+      "To check the internet, this page uses Windows' own check (the same one behind the network icon on the taskbar).":
+        "لفحص الإنترنت تستخدم هذه الصفحة فحص Windows نفسه (نفس الفحص وراء أيقونة الشبكة في شريط المهام).",
+      "To check the internet, this page opens Apple's check page (captive.apple.com), the same one macOS uses to find sign-in pages.":
+        "لفحص الإنترنت تفتح هذه الصفحة صفحة الفحص من Apple ‏(captive.apple.com)، وهي نفسها التي يستخدمها macOS لاكتشاف صفحات تسجيل الدخول.",
+      "Internet works on this connection": "الإنترنت يعمل على هذا الاتصال",
+      "This Wi-Fi needs you to sign in": "شبكة Wi-Fi هذه تتطلب تسجيل الدخول",
+      "Connected, but no internet yet": "متصل، لكن لا يوجد إنترنت بعد",
+      "Not connected to a network": "غير متصل بأي شبكة",
+      "Could not check the internet": "تعذّر فحص الإنترنت",
+      "Open the sign-in page and enter the username and password from your card.": "افتح صفحة تسجيل الدخول وأدخل اسم المستخدم وكلمة المرور من بطاقتك.",
+      "If it stays like this, open the sign-in page or join the Wi-Fi again.": "إذا بقي الوضع هكذا، افتح صفحة تسجيل الدخول أو انضم إلى الشبكة مجددًا.",
+      "Join a Wi-Fi first.": "انضم إلى شبكة Wi-Fi أولًا.",
+      "Tower Monitor cannot be reached. Is it still open?": "يتعذّر الوصول إلى مراقب الأبراج. هل ما زال مفتوحًا؟",
+      "Could not open it. Open Settings yourself.": "تعذّر فتحها. افتح الإعدادات بنفسك.",
+      "This computer's Wi-Fi card can't run a hotspot. A USB Wi-Fi adapter that supports hotspot mode would work.":
+        "بطاقة Wi-Fi في هذا الحاسوب لا تدعم نقطة الاتصال. محوّل Wi-Fi عبر USB يدعم وضع نقطة الاتصال سيعمل.",
+      "Mobile Hotspot is turned off by your organisation's settings on this computer.": "نقطة الاتصال المحمولة معطّلة بإعدادات مؤسستك على هذا الحاسوب.",
+      "This edition of Windows doesn't allow Mobile Hotspot.": "هذا الإصدار من Windows لا يسمح بنقطة الاتصال المحمولة.",
+      "Windows says Mobile Hotspot isn't available on this connection.": "يقول Windows إن نقطة الاتصال المحمولة غير متاحة على هذا الاتصال.",
+      "Windows couldn't read Mobile Hotspot. Connect to a network with internet first.": "تعذّر على Windows قراءة نقطة الاتصال المحمولة. اتصل بشبكة فيها إنترنت أولًا.",
+      "Mobile Hotspot is on. Connect the other device now.": "نقطة الاتصال المحمولة قيد التشغيل. صِل الجهاز الآخر الآن.",
+      "Mobile Hotspot is off.": "نقطة الاتصال المحمولة متوقفة.",
+      "Windows could not turn on Mobile Hotspot. Try it in Settings, or check the activity log for the reason.":
+        "تعذّر على Windows تشغيل نقطة الاتصال المحمولة. جرّبها من الإعدادات، أو راجع سجل النشاط لمعرفة السبب.",
+      "Windows could not turn off Mobile Hotspot. Turn it off in Settings.": "تعذّر على Windows إيقاف نقطة الاتصال المحمولة. أوقفها من الإعدادات.",
+    },
+    templates: {
+      "Wi-Fi: {s}": "Wi-Fi: {s}",
+      "{n} of {m}": "{n} من {m}",
+    },
+  };
+  const merged = {text: {}, templates: {}, fragments: {}, extra: []};
+  for (const p of [...(window.TM_I18N_PARTS || []), own]) {
+    Object.assign(merged.text, p.text || {});
+    Object.assign(merged.templates, p.templates || {});
+    Object.assign(merged.fragments, p.fragments || {});
+    merged.extra.push(...(p.extra || []));
+  }
+  merged.mount = own.mount;
+  merged.blocks = own.blocks;
+  return merged;
+})();
+/* Language: English or Arabic. The page is written in English; when Arabic is chosen this block
+   lays the page out right to left and translates what it shows, including what the page builds
+   later and messages from the app, using the table above. Anything not in the table stays English. */
+(() => {
+  "use strict";
+  const KEY = "lang";
+  let saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) { /* storage blocked: follow the device */ }
+  if (saved !== "ar" && saved !== "en") saved = null;
+  const device = /^ar\b/i.test(navigator.language || "") ? "ar" : "en";
+  const lang = saved || device, ar = lang === "ar";
+  const html = document.documentElement;
+  html.lang = lang; html.dir = ar ? "rtl" : "ltr";
+  window.LANG = lang;
+
+  const T = window.I18N || {};
+  const TEXT = T.text || {};
+  const BLOCKS = {};   // whole elements whose English text maps to Arabic markup
+  const norm = s => s.replace(/\s+/g, " ").trim();
+  for (const [en, a] of Object.entries(T.blocks || {})) BLOCKS[norm(en)] = a;
+  const esc = s => s.replace(/[.*+?^$()|[\]\\]/g, "\\$&");
+  const compile = (en, a, whole) => {
+    const names = [];
+    const src = esc(en).replace(/\{(\w+)\}/g, (_, n) => { names.push(n); return "(.+?)"; });
+    return {re: new RegExp(whole ? `^${src}$` : src, whole ? "" : "g"), names, a};
+  };
+  const TPL = Object.entries(T.templates || {}).map(([en, a]) => compile(en, a, true));
+  const FRAG = Object.entries(T.fragments || {}).sort((x, y) => y[0].length - x[0].length).map(([en, a]) => compile(en, a, false));
+  const UNITS = [
+    [/(\d[\d.,]*) ?min\b/g, "$1 د"], [/(\d[\d.,]*) h\b/g, "$1 س"], [/(\d[\d.,]*) s\b/g, "$1 ث"],
+    [/(\d[\d.,]*) km\b/g, "$1 كم"], [/(\d[\d.,]*) m\b/g, "$1 م"], [/(\d[\d.,]*) ?(GB|MB|kB)\b/g, "$1 $2"],
+    ...(T.extra || []),
+  ];
+  // A value like "-88.4 dBm" would read "dBm 88.4-" in right-to-left text; isolate it as left to right.
+  const NUM = /(?:[-+≈<]\s?)?\d[\d.,]*\s?(dBm|dB|ms|Mbps|Mbit\/s|kbit\/s|MB\/s|GB|MB|kB)(?![A-Za-z])/g;
+  const IP = /\b\d{1,3}(?:\.\d{1,3}){3}\b/g;   // addresses too
+  const fill = (p, m) => {
+    let out = p.a;
+    p.names.forEach((n, i) => { out = out.split(`{${n}}`).join(words(m[i + 1])); });
+    return out;
+  };
+  function tr(s) {
+    if (!ar || s == null) return s;
+    s = String(s);
+    if (s.includes("\u2066")) return s;   // already translated
+    const out = words(s);
+    return /\d/.test(out) ? out.replace(NUM, "\u2066$&\u2069") : out;
+  }
+  const cache = new Map();
+  function words(s) {
+    const k = s.trim();
+    if (!k || !/[A-Za-z]/.test(k)) return s;
+    let out = cache.get(k);
+    if (out === undefined) {
+      out = TEXT[k];
+      if (out === undefined) {
+        const p = TPL.find(p => p.re.test(k));
+        if (p) out = fill(p, k.match(p.re));
+        else {
+          out = k;
+          for (const f of FRAG) out = out.replace(f.re, (...m) => fill(f, m));
+        }
+        for (const [re, to] of UNITS) out = out.replace(re, to);
+      }
+      if (cache.size > 3000) cache.clear();
+      cache.set(k, out);
+    }
+    if (out === k) return s;
+    const at = s.indexOf(k);
+    return s.slice(0, at) + out + s.slice(at + k.length);
+  }
+  window.tr = tr;
+
+  /* Times and dates come out in Arabic with Western digits, like the numbers around them, on a 24-hour clock. */
+  if (ar) for (const m of ["toLocaleTimeString", "toLocaleString", "toLocaleDateString"]) {
+    const f = Date.prototype[m];
+    Date.prototype[m] = function (_locales, opts) { return f.call(this, "ar-u-nu-latn-hc-h23", opts); };
+  }
+  if (ar && window.CanvasRenderingContext2D) {   // chart labels drawn on a canvas
+    const f = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (t, ...rest) { return f.call(this, words(String(t)), ...rest); };
+  }
+  if (ar) for (const m of ["alert", "confirm", "prompt"]) {
+    const f = window[m];
+    window[m] = (msg, ...rest) => f.call(window, tr(msg), ...rest);
+  }
+
+  const SKIP = "script,style,textarea,code,[translate=no]" + (T.skip ? "," + T.skip : "");   // T.skip: names people typed
+  const ATTRS = ["title", "aria-label", "placeholder", "alt"];
+  function attrs(e) {
+    for (const a of ATTRS) {
+      const v = e.getAttribute(a);
+      if (v) { const w = tr(v); if (w !== v) e.setAttribute(a, w); }
+    }
+  }
+  function text(n) {
+    const p = n.parentElement;
+    if (!p || p.closest(SKIP)) return;
+    const w = tr(n.nodeValue);
+    if (w !== n.nodeValue) n.nodeValue = w;
+  }
+  function walk(node) {
+    if (node.nodeType === 3) return text(node);
+    if (node.nodeType !== 1) return;
+    if (node.matches(SKIP)) {   // its text stays as written; tooltips and placeholders are still translated
+      if (!node.matches("script,style,[translate=no]")) attrs(node);
+      return;
+    }
+    const b = BLOCKS[norm(node.textContent)];
+    if (b !== undefined && node.children.length && !node.closest("[translate=no]")) { node.innerHTML = b; return; }
+    attrs(node);
+    for (const c of Array.from(node.childNodes)) walk(c);
+  }
+
+  function picker() {
+    const box = document.createElement("label");
+    box.className = "lang-pick";
+    box.setAttribute("translate", "no");
+    box.title = ar ? "اللغة" : "Language";
+    const sel = document.createElement("select");
+    sel.setAttribute("aria-label", ar ? "اللغة" : "Language");
+    for (const [v, name] of [["", ar ? "لغة الجهاز" : "Device language"], ["en", "English"], ["ar", "العربية"]]) {
+      const o = document.createElement("option"); o.value = v; o.textContent = name; sel.append(o);
+    }
+    sel.value = saved || "";
+    sel.addEventListener("change", () => {
+      try { if (sel.value) localStorage.setItem(KEY, sel.value); else localStorage.removeItem(KEY); } catch (e) { /* not kept */ }
+      location.reload();
+    });
+    box.append(Object.assign(document.createElement("span"), {textContent: "🌐", ariaHidden: "true"}), sel);
+    const style = document.createElement("style");
+    style.textContent = `.lang-pick{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--text2,inherit)}
+.lang-pick select{font:inherit;color:inherit;background:var(--surface,transparent);border:1px solid var(--border,#8884);border-radius:7px;padding:2px 4px;cursor:pointer}
+[dir=rtl] svg,[dir=rtl] canvas{direction:ltr}
+${T.css || ""}`;
+    document.head.append(style);
+    const spot = document.querySelector(T.mount || "header") || document.querySelector("main") || document.body;
+    if (T.prepend) {   // on its own line above the page's content
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;justify-content:flex-end;margin-bottom:8px";
+      row.append(box); spot.prepend(row);
+    } else spot.append(box);
+  }
+
+  function start() {
+    picker();
+    if (!ar) return;
+    document.title = tr(document.title);
+    walk(document.body);
+    new MutationObserver(records => {
+      for (const r of records) {
+        if (r.type === "characterData") text(r.target);
+        else if (r.type === "attributes") attrs(r.target);
+        else for (const n of r.addedNodes) walk(n);
+      }
+    }).observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS});
+  }
+  if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
+})();
+</script>
+<!-- /language -->
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+let st = null, busy = false, timer = null, platformSet = false;
+
+const NET = {
+  ready: ["Internet works on this connection", ""],
+  signIn: ["This Wi-Fi needs you to sign in", "Open the sign-in page and enter the username and password from your card."],
+  limited: ["Connected, but no internet yet", "If it stays like this, open the sign-in page or join the Wi-Fi again."],
+  disconnected: ["Not connected to a network", "Join a Wi-Fi first."],
+  unknown: ["Could not check the internet", ""],
+};
+const CAPABILITY = {
+  DisabledByHardwareLimitation: "This computer's Wi-Fi card can't run a hotspot. A USB Wi-Fi adapter that supports hotspot mode would work.",
+  DisabledByGroupPolicy: "Mobile Hotspot is turned off by your organisation's settings on this computer.",
+  DisabledBySku: "This edition of Windows doesn't allow Mobile Hotspot.",
+  DisabledBySystemCapability: "This edition of Windows doesn't allow Mobile Hotspot.",
+};
+
+function msg(text, bad) {
+  const m = $("hsMsg");
+  m.hidden = !text; m.textContent = text || ""; m.classList.toggle("bad", !!bad);
+}
+
+function setPlatform(p) {
+  if (platformSet) return;
+  platformSet = true;
+  $("shareWin").hidden = p !== "windows";
+  $("shareMac").hidden = p !== "mac";
+  $("shareOther").hidden = p === "windows" || p === "mac";
+  if (p === "windows") {
+    $("joinText").textContent = "Join the public Wi-Fi from the network icon on the taskbar. If a sign-in page opens, enter the username and password from your card there.";
+  } else if (p === "mac") {
+    $("joinText").textContent = "Join the public Wi-Fi from the Wi-Fi icon in the menu bar. If a sign-in page opens, enter the username and password from your card there.";
+    $("connectText").textContent = "On the phone or other computer, connect the cable, then open a website on it to check that it works. Some public Wi-Fi providers limit sharing or the number of devices.";
+    $("privacy").textContent = "To check the internet, this page opens Apple's check page (captive.apple.com), the same one macOS uses to find sign-in pages.";
+  } else {
+    $("privacy").hidden = true;
+  }
+}
+
+function render() {
+  if (!st) return;
+  setPlatform(st.platform);
+  const [text, sub] = NET[st.internet] || NET.unknown;
+  $("dot").className = "dot " + (st.internet || "");
+  $("netText").textContent = text;
+  // Separate pieces, so each one is translated on its own.
+  const parts = [];
+  if (st.ssid) parts.push(`Wi-Fi: ${st.ssid}`);
+  if (sub) parts.push(sub);
+  $("netSub").replaceChildren(...parts.map(t => Object.assign(document.createElement("span"), {textContent: t})));
+  $("signinBtn").hidden = st.internet === "ready";
+
+  if (st.platform !== "windows") return;
+  const hs = st.hotspot;
+  $("hsBox").hidden = !hs;
+  if (hs) {
+    const on = hs.state === "On", moving = hs.state === "InTransition";
+    $("hsState").textContent = on ? "On" : moving ? "Changing…" : "Off";
+    $("hsState").className = on ? "state-on" : "state-off";
+    $("hsName").textContent = hs.ssid || "–";
+    $("hsPass").textContent = hs.password || "–";
+    $("hsClients").textContent = hs.max_clients ? `${hs.clients ?? 0} of ${hs.max_clients}` : String(hs.clients ?? 0);
+    if (!busy) {
+      $("hsToggle").textContent = on ? "Turn off Mobile Hotspot" : "Turn on Mobile Hotspot";
+      $("hsToggle").classList.toggle("primary", !on);
+    }
+  }
+  const capable = !st.capability || st.capability === "Enabled";
+  $("hsToggle").disabled = busy || !hs || !capable;
+  if (!busy && !$("hsMsg").dataset.keep) {
+    if (!capable) msg(CAPABILITY[st.capability] || "Windows says Mobile Hotspot isn't available on this connection.", true);
+    else if (!hs) msg("Windows couldn't read Mobile Hotspot. Connect to a network with internet first.", true);
+    else msg("");
+  }
+}
+
+async function load() {
+  try {
+    const r = await fetch("/api/hotspot/status", {cache: "no-store"});
+    if (!r.ok) throw new Error(r.status);
+    st = await r.json();
+  } catch (e) {
+    st = null;
+    $("dot").className = "dot";
+    $("netText").textContent = "Tower Monitor cannot be reached. Is it still open?";
+    $("netSub").textContent = "";
+  }
+  render();
+}
+function schedule() {
+  clearTimeout(timer);
+  timer = setTimeout(async () => {
+    if (document.visibilityState === "visible" && !busy) await load();
+    schedule();
+  }, 8000);
+}
+
+async function post(path, body) {
+  const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body || {})});
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+document.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", async () => {
+  let ok = false;
+  try { ok = (await post("/api/hotspot/open", {what: b.dataset.open})).ok; } catch (e) { ok = false; }
+  if (!ok) {
+    if (st?.platform === "windows" && !$("shareWin").hidden) msg("Could not open it. Open Settings yourself.", true);
+    else alert("Could not open it. Open Settings yourself.");
+  }
+}));
+
+$("recheck").addEventListener("click", async () => {
+  $("recheck").disabled = true;
+  $("netText").textContent = "Checking the internet…";
+  await load();
+  $("recheck").disabled = false;
+});
+
+$("hsToggle").addEventListener("click", async () => {
+  const turnOn = !(st?.hotspot?.state === "On");
+  busy = true;
+  delete $("hsMsg").dataset.keep;
+  $("hsToggle").disabled = true;
+  $("hsToggle").textContent = turnOn ? "Turning on…" : "Turning off…";
+  msg("");
+  try {
+    st = await post(turnOn ? "/api/hotspot/start" : "/api/hotspot/stop");
+    const ok = st.result?.ok;
+    msg(ok ? (turnOn ? "Mobile Hotspot is on. Connect the other device now." : "Mobile Hotspot is off.")
+           : (turnOn ? "Windows could not turn on Mobile Hotspot. Try it in Settings, or check the activity log for the reason."
+                     : "Windows could not turn off Mobile Hotspot. Turn it off in Settings."), !ok);
+    $("hsMsg").dataset.keep = "1";
+    setTimeout(() => { delete $("hsMsg").dataset.keep; }, 15000);
+  } catch (e) {
+    msg("Tower Monitor cannot be reached. Is it still open?", true);
+  }
+  busy = false;
+  render();
+});
+
+load().then(schedule);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !busy) load(); });
+</script>
+</body>
+</html>

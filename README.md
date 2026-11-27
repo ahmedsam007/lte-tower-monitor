@@ -19,6 +19,15 @@ It runs on your own computer (Windows or macOS), talks to your routers over your
 - Every device on the network, how busy it is now, and how much it used today
 - **Limit** a device's speed, or **Block** it from the internet, with one button. Undo works the same way.
 
+**Share public Wi-Fi** (http://127.0.0.1:8765/hotspot): log in once to a public Wi-Fi (the kind with a card and a username/password) on this computer, and let your phone or other devices use it through the computer.
+
+- Shows whether the Wi-Fi has internet or is waiting for you to sign in, and opens the sign-in page
+- **Windows**: turns Mobile Hotspot on and off with one button and shows its network name and password. Windows shares the Wi-Fi over the same Wi-Fi card (most cards can; if yours can't, the page says so).
+- **Mac**: a Mac can't send Wi-Fi back out over its own Wi-Fi card. The page explains how to share it to a device on a cable instead, and opens the right settings.
+- Works without the D-Link: it's also linked from the setup page.
+
+**Activity log** (http://127.0.0.1:8765/log): what Tower Monitor did and what went wrong (start-ups, setup and router errors, lock steps, device changes, Wi-Fi sharing), kept for 14 days. If something doesn't work, press **Copy report** and paste it into a message to whoever helps you. Passwords are never recorded.
+
 ## What you need
 
 | | |
@@ -136,10 +145,15 @@ While it runs, Tower Monitor saves these files next to the program. They're all 
 | `locations.json` | The location you typed in, and tower positions |
 | `device_usage.json`, `device_names.json` | Daily usage per device, and the names you gave them |
 | `lock_actions.log`, `device_actions.log` | Every change made to the modem or the TP-Link |
+| `activity_log.jsonl` | The activity log (last 14 days) |
 
 Delete them whenever you like; Tower Monitor starts fresh.
 
+The one exception to "nothing is sent to the internet" is the **Share public Wi-Fi** page on a Mac: while it's open, it checks the internet with Apple's own check page (captive.apple.com), the same one macOS uses to find Wi-Fi sign-in pages. On Windows it asks Windows instead, which does its own check.
+
 ## Troubleshooting
+
+- **First, open the Activity log** (link at the top of the dashboard or under the setup page). It usually says what went wrong; **Copy report** gives you text to send to whoever helps you.
 
 - **"Router not reachable"**: check that the computer is on the router's network, SSH is enabled, and the password in `config.json` is right. If you started and stopped Tower Monitor several times quickly, the router may refuse new SSH logins for about 5 minutes; wait and it recovers.
 - **The page loads but the readings are empty**: your modem may use a different command port. Try `/tmp/dev/ttyUSB2` for `at_port`.

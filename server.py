@@ -32,6 +32,8 @@ from collections import deque
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
+import activity
+
 HERE = os.path.dirname(os.path.abspath(__file__))       # program files (pages, example config)
 DATA = os.environ.get("TOWER_MONITOR_DATA") or HERE       # settings and logs; the Mac/Windows app sets its own folder
 os.makedirs(DATA, exist_ok=True)
@@ -43,6 +45,7 @@ GAP_SECONDS = 60             # a silence longer than this is reported as a gap
 
 
 def stop(msg):
+    activity.add("app", "Tower Monitor stopped", "problem", msg)
     print("\n" + msg + "\n", file=sys.stderr)
     sys.exit(1)
 
@@ -54,6 +57,7 @@ except ImportError:
          "or install the packages yourself:  python3 -m pip install --only-binary=:all: -r requirements.txt")
 
 import devices
+import extras
 import firstrun
 
 
@@ -450,8 +454,17 @@ def maybe_lookup(s):
     threading.Thread(target=lookup_tower, args=(cid, tac), daemon=True).start()
 
 
-def add_event(t, kind, text):
+LIVE = False      # False while old readings are replayed from tower_log.csv at start
+EVENT_LEVEL = {"router_down": "problem", "net_down": "problem", "gap": "info"}
+
+
+def add_event(t, kind, text, level=None, detail=None):
     EVENTS.append({"t": t, "kind": kind, "text": text})
+    if LIVE:   # live events also go to the activity log
+        activity.add("lock" if kind == "lock" else "router", text, level or EVENT_LEVEL.get(kind, "change"),
+                     detail, quiet_key=kind if kind in ("router_down", "net_down") else None)
+        if kind in ("router_up", "net_up"):
+            activity.resolved("router", kind.replace("_up", "_down"))
 
 
 def ingest(row):
@@ -579,12 +592,15 @@ def poller():
                 STATE["fails"] = STATE.get("fails", 0) + 1
                 if STATE["fails"] >= 2:
                     if STATE["router_ok"] is not False:
-                        add_event(now, "router_down", "Router not reachable from this computer")
+                        add_event(now, "router_down", "Router not reachable from this computer", detail=err)
                     STATE["router_ok"], STATE["error"] = False, err
             else:
                 STATE["fails"] = 0
                 if STATE["router_ok"] is False:
                     add_event(now, "router_up", "Router reachable again")
+                elif STATE["router_ok"] is None:
+                    activity.add("router", "Connected to the router", "info",
+                                 f"router: {CFG['host']}; modem port: {CFG.get('at_port')}")
                 try:
                     s = parse(text, now)
                     # This link loses a lot of test packets even while it works, so call it
@@ -609,6 +625,7 @@ def poller():
                             log_row(row, sv.get("band") if sv.get("pci") else None, s["lte_band_mask"])
                 except Exception as e:  # one odd reading must never stop the monitor
                     print(f"Skipped a reading: {e!r}", file=sys.stderr)
+                    activity.problem_from_exception("router", "A reading from the router could not be used", e)
         time.sleep(max(1.0, POLL - (time.time() - started)))
 
 
@@ -661,8 +678,10 @@ def lock_list_from(answer):
     return [[nums[i], nums[i + 1]] for i in range(0, len(nums) - 1, 2) if nums[i] or nums[i + 1]]
 
 
-def step(text, detail=None):
+def step(text, detail=None, log=True):
     now = time.time()
+    if log:
+        activity.add("lock", text, "info", ("DRY RUN; " if DRY_RUN else "") + (detail or "") or None)
     with LOCK:
         ACTION["steps"].append({"t": now, "text": text})
     line = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now)) + ("  DRY RUN  " if DRY_RUN else "  ") + text
@@ -676,10 +695,10 @@ def step(text, detail=None):
 
 
 def finish(state, result, detail=None):
-    step(result, detail)
+    step(result, detail, log=False)
     with LOCK:
         ACTION.update(state=state, result=result, ended=time.time())
-        add_event(time.time(), "lock", result)
+        add_event(time.time(), "lock", result, "problem" if state == "failed" else "change", detail)
 
 
 def watch(target, since, seconds):
@@ -1053,6 +1072,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        if extras.handle_get(self):
+            return
         u = urlparse(self.path)
         if u.path in ("/", "/index.html"):
             with open(os.path.join(HERE, "index.html"), "rb") as f:
@@ -1098,6 +1119,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         # Only the page itself (same machine, same origin, JSON body) may save locations or change the lock.
+        if extras.handle_post(self):
+            return
         host = (self.headers.get("Host") or "").split(":")[0]
         path = urlparse(self.path).path
         if path.startswith("/api/setup/"):          # "Change router settings" from the dashboard
@@ -1180,6 +1203,7 @@ def house_down_bps():
 
 
 def main(*, port=None, on_ready=None, reuse=None):
+    global LIVE
     if threading.current_thread() is threading.main_thread():   # the app runs this in a thread
         signal.signal(signal.SIGTERM, lambda *a: sys.exit(0))   # so the SSH session is closed on kill too
     if port is None:
@@ -1191,6 +1215,7 @@ def main(*, port=None, on_ready=None, reuse=None):
         if not DRY_RUN:
             upgrade_log_header()
         load_log()
+        LIVE = True
         threading.Thread(target=poller, daemon=True).start()
         if LOCAL_TRAFFIC:
             threading.Thread(target=mac_traffic_poller, daemon=True).start()

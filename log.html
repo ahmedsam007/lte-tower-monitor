@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Activity log</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --text: #0b0b0b; --text2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --good: #0ca30c; --warning: #fab219; --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --text: #f0efec; --text2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --s1: #3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-bottom: 14px; }
+  h1 { font-size: 20px; margin: 0; font-weight: 650; }
+  a { color: var(--s1); }
+  .sub { color: var(--text2); font-size: 12.5px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font: inherit; font-size: 13px; color: var(--text2); background: var(--surface); border: 1px solid var(--border);
+          border-radius: 16px; padding: 4px 12px; cursor: pointer; }
+  .chip[aria-pressed="true"] { color: var(--text); font-weight: 650; border-color: var(--s1);
+                               background: color-mix(in srgb, var(--s1) 10%, var(--surface)); }
+  .check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); cursor: pointer; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-inline-start: auto; }
+  .btn { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+         border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+  .btn.primary { background: var(--s1); border-color: var(--s1); color: #fff; }
+  .btn.danger { color: var(--critical); }
+  .summary { color: var(--text2); font-size: 12.5px; margin: 0 0 10px; }
+  .day { font-size: 12.5px; font-weight: 650; color: var(--text2); margin: 16px 0 6px; }
+  .day:first-child { margin-top: 0; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li.e { display: grid; grid-template-columns: auto auto 1fr; gap: 2px 10px; align-items: baseline;
+         padding: 7px 4px; border-bottom: 1px solid var(--grid); }
+  li.e:last-child { border-bottom: 0; }
+  li.e.has-detail { cursor: pointer; }
+  li.e.has-detail:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
+  .time { font-variant-numeric: tabular-nums; color: var(--text2); font-size: 12.5px; white-space: nowrap; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: var(--muted); }
+  .problem .dot { background: var(--critical); }
+  .change .dot { background: var(--s1); }
+  .what { min-width: 0; overflow-wrap: anywhere; }
+  .area { color: var(--text2); font-size: 12px; margin-inline-end: 6px; }
+  .rep { color: var(--text2); font-size: 12px; margin-inline-start: 6px; }
+  .problem .text { color: var(--critical); }
+  pre { grid-column: 1 / -1; margin: 4px 0 2px; padding: 8px 10px; border-radius: 6px; font-size: 12px;
+        background: color-mix(in srgb, var(--text) 6%, transparent); white-space: pre-wrap; overflow-wrap: anywhere;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+  .empty { color: var(--text2); padding: 8px 0; }
+  .toast { position: fixed; inset-inline: 0; bottom: 20px; margin: 0 auto; width: max-content; max-width: 90vw;
+           background: var(--text); color: var(--page); padding: 8px 14px; border-radius: 8px; font-size: 13px;
+           opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  @media (max-width: 560px) { .actions { margin-inline-start: 0; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Activity log</h1>
+    <a href="/" class="sub" style="color:var(--s1)">Tower Monitor</a>
+    <a href="/hotspot" class="sub" style="color:var(--s1)">Share public Wi-Fi</a>
+  </header>
+
+  <p class="sub" style="margin:0 0 12px">What Tower Monitor did and what went wrong, for the last 14 days. If something doesn't work, press <b>Copy report</b> and send it to whoever helps you. Passwords are never recorded.</p>
+
+  <div class="bar">
+    <div class="chips" id="chips" role="group" aria-label="Area"></div>
+    <label class="check"><input type="checkbox" id="problems"> Problems only</label>
+    <div class="actions">
+      <button class="btn primary" id="copyBtn" type="button">Copy report</button>
+      <button class="btn" id="folderBtn" type="button">Open folder</button>
+      <button class="btn danger" id="clearBtn" type="button">Clear</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="summary" id="summary">Loading…</p>
+    <div id="list"></div>
+  </div>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- translations from the other pages: lock steps, router messages, setup messages -->
+<script src="/i18n.js"></script>
+<!-- language: English / Arabic -->
+<script>
+window.I18N = (() => {
+  const own = {
+    mount: "header",
+    blocks: {
+      "What Tower Monitor did and what went wrong, for the last 14 days. If something doesn't work, press Copy report and send it to whoever helps you. Passwords are never recorded.":
+        "ما فعله مراقب الأبراج وما حدث من أخطاء خلال آخر 14 يومًا. إذا لم يعمل شيء ما، اضغط <b>نسخ التقرير</b> وأرسله إلى من يساعدك. لا تُسجَّل كلمات المرور أبدًا.",
+    },
+    text: {
+      "Activity log": "سجل النشاط",
+      "Tower Monitor": "مراقب الأبراج",
+      "Share public Wi-Fi": "مشاركة Wi-Fi العامة",
+      "Problems only": "المشكلات فقط",
+      "Copy report": "نسخ التقرير",
+      "Open folder": "فتح المجلد",
+      "Clear": "مسح",
+      "Loading…": "جارٍ التحميل…",
+      "Area": "القسم",
+      "All": "الكل",
+      "App": "التطبيق",
+      "Setup": "الإعداد",
+      "Router": "جهاز التوجيه",
+      "Tower lock": "تثبيت البرج",
+      "Devices": "الأجهزة",
+      "Wi-Fi sharing": "مشاركة Wi-Fi",
+      "Today": "اليوم",
+      "Yesterday": "أمس",
+      "Copied. Paste it into a message.": "تم النسخ. ألصقه في رسالة.",
+      "Could not copy. Select the text below and copy it.": "تعذّر النسخ. حدّد النص أدناه وانسخه.",
+      "Could not open the folder.": "تعذّر فتح المجلد.",
+      "Clear the activity log? This cannot be undone.": "مسح سجل النشاط؟ لا يمكن التراجع عن ذلك.",
+      "Nothing recorded here yet.": "لم يُسجَّل شيء هنا بعد.",
+      "No problems recorded.": "لم تُسجَّل أي مشكلات.",
+      "Tower Monitor cannot be reached. Is it still open?": "يتعذّر الوصول إلى مراقب الأبراج. هل ما زال مفتوحًا؟",
+      "Tap an entry to see the details.": "اضغط على أي سطر لرؤية التفاصيل.",
+      // what the app writes into the log
+      "Tower Monitor stopped": "توقّف مراقب الأبراج",
+      "Tower Monitor closed": "أُغلق مراقب الأبراج",
+      "Tower Monitor hit an unexpected error": "واجه مراقب الأبراج خطأً غير متوقّع",
+      "Tower Monitor could not start": "تعذّر تشغيل مراقب الأبراج",
+      "Activity log cleared": "تم مسح سجل النشاط",
+      "The app window could not open; pages open in the web browser instead": "تعذّر فتح نافذة التطبيق؛ تُفتح الصفحات في المتصفح بدلًا منها",
+      "Another copy of Tower Monitor is already open; showing it": "نسخة أخرى من مراقب الأبراج مفتوحة؛ يتم عرضها",
+      "Setup started: the router password is needed": "بدأ الإعداد: كلمة مرور جهاز التوجيه مطلوبة",
+      "No D-Link router found on this network": "لم يُعثر على جهاز توجيه D-Link في هذه الشبكة",
+      "Router settings saved": "تم حفظ إعدادات جهاز التوجيه",
+      "Connected to the router": "تم الاتصال بجهاز التوجيه",
+      "Router reachable again": "أصبح الوصول إلى جهاز التوجيه ممكنًا مجددًا",
+      "A reading from the router could not be used": "تعذّر استخدام قراءة من جهاز التوجيه",
+      "Could not read the TP-Link": "تعذّرت القراءة من TP-Link",
+      "The TP-Link can be read again": "أصبحت القراءة من TP-Link ممكنة مجددًا",
+      "Speed limit set": "تم ضبط حدّ السرعة",
+      "Speed limit removed": "تمت إزالة حدّ السرعة",
+      "Device blocked": "تم حظر الجهاز",
+      "Device unblocked": "تم إلغاء حظر الجهاز",
+      "Address reserved for a device": "تم حجز عنوان لجهاز",
+      "TP-Link setting changed": "تم تغيير إعداد في TP-Link",
+      "A change on the TP-Link failed": "فشل تغيير في TP-Link",
+      "Internet works on this connection": "الإنترنت يعمل على هذا الاتصال",
+      "This Wi-Fi needs you to sign in": "شبكة Wi-Fi هذه تتطلب تسجيل الدخول",
+      "Connected, but no internet yet": "متصل، لكن لا يوجد إنترنت بعد",
+      "Not connected to a network": "غير متصل بأي شبكة",
+      "Could not check the internet": "تعذّر فحص الإنترنت",
+      "Mobile Hotspot turned on": "تم تشغيل نقطة الاتصال المحمولة",
+      "Mobile Hotspot turned off": "تم إيقاف نقطة الاتصال المحمولة",
+      "Windows refused to switch Mobile Hotspot": "رفض Windows تبديل نقطة الاتصال المحمولة",
+      "Could not use Mobile Hotspot": "تعذّر استخدام نقطة الاتصال المحمولة",
+      "Could not open Settings": "تعذّر فتح الإعدادات",
+    },
+    templates: {
+      "{n} entries · {v} on {s}": "{n} سجل · الإصدار {v} على {s}",
+      "1 entry · {v} on {s}": "سجل واحد · الإصدار {v} على {s}",
+      "{n} entries shown of {m} · {v} on {s}": "{n} من {m} سجل · الإصدار {v} على {s}",
+      "Tower Monitor {v} started": "بدأ تشغيل مراقب الأبراج {v}",
+      "Found a D-Link router at {ip} ({m})": "عُثر على جهاز توجيه D-Link على {ip} ‏({m})",
+      "×{n} more": "×{n} مرة أخرى",
+    },
+  };
+  // Merge the other pages' tables, so messages already translated there are translated here too.
+  const merged = {text: {}, templates: {}, fragments: {}, extra: []};
+  for (const p of [...(window.TM_I18N_PARTS || []), own]) {
+    Object.assign(merged.text, p.text || {});
+    Object.assign(merged.templates, p.templates || {});
+    Object.assign(merged.fragments, p.fragments || {});
+    merged.extra.push(...(p.extra || []));
+  }
+  merged.mount = own.mount;
+  merged.blocks = own.blocks;
+  return merged;
+})();
+/* Language: English or Arabic. The page is written in English; when Arabic is chosen this block
+   lays the page out right to left and translates what it shows, including what the page builds
+   later and messages from the app, using the table above. Anything not in the table stays English. */
+(() => {
+  "use strict";
+  const KEY = "lang";
+  let saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) { /* storage blocked: follow the device */ }
+  if (saved !== "ar" && saved !== "en") saved = null;
+  const device = /^ar\b/i.test(navigator.language || "") ? "ar" : "en";
+  const lang = saved || device, ar = lang === "ar";
+  const html = document.documentElement;
+  html.lang = lang; html.dir = ar ? "rtl" : "ltr";
+  window.LANG = lang;
+
+  const T = window.I18N || {};
+  const TEXT = T.text || {};
+  const BLOCKS = {};   // whole elements whose English text maps to Arabic markup
+  const norm = s => s.replace(/\s+/g, " ").trim();
+  for (const [en, a] of Object.entries(T.blocks || {})) BLOCKS[norm(en)] = a;
+  const esc = s => s.replace(/[.*+?^$()|[\]\\]/g, "\\$&");
+  const compile = (en, a, whole) => {
+    const names = [];
+    const src = esc(en).replace(/\{(\w+)\}/g, (_, n) => { names.push(n); return "(.+?)"; });
+    return {re: new RegExp(whole ? `^${src}$` : src, whole ? "" : "g"), names, a};
+  };
+  const TPL = Object.entries(T.templates || {}).map(([en, a]) => compile(en, a, true));
+  const FRAG = Object.entries(T.fragments || {}).sort((x, y) => y[0].length - x[0].length).map(([en, a]) => compile(en, a, false));
+  const UNITS = [
+    [/(\d[\d.,]*) ?min\b/g, "$1 د"], [/(\d[\d.,]*) h\b/g, "$1 س"], [/(\d[\d.,]*) s\b/g, "$1 ث"],
+    [/(\d[\d.,]*) km\b/g, "$1 كم"], [/(\d[\d.,]*) m\b/g, "$1 م"], [/(\d[\d.,]*) ?(GB|MB|kB)\b/g, "$1 $2"],
+    ...(T.extra || []),
+  ];
+  // A value like "-88.4 dBm" would read "dBm 88.4-" in right-to-left text; isolate it as left to right.
+  const NUM = /(?:[-+≈<]\s?)?\d[\d.,]*\s?(dBm|dB|ms|Mbps|Mbit\/s|kbit\/s|MB\/s|GB|MB|kB)(?![A-Za-z])/g;
+  const IP = /\b\d{1,3}(?:\.\d{1,3}){3}\b/g;   // addresses too
+  const fill = (p, m) => {
+    let out = p.a;
+    p.names.forEach((n, i) => { out = out.split(`{${n}}`).join(words(m[i + 1])); });
+    return out;
+  };
+  function tr(s) {
+    if (!ar || s == null) return s;
+    s = String(s);
+    if (s.includes("\u2066")) return s;   // already translated
+    const out = words(s);
+    return /\d/.test(out) ? out.replace(NUM, "\u2066$&\u2069") : out;
+  }
+  const cache = new Map();
+  function words(s) {
+    const k = s.trim();
+    if (!k || !/[A-Za-z]/.test(k)) return s;
+    let out = cache.get(k);
+    if (out === undefined) {
+      out = TEXT[k];
+      if (out === undefined) {
+        const p = TPL.find(p => p.re.test(k));
+        if (p) out = fill(p, k.match(p.re));
+        else {
+          out = k;
+          for (const f of FRAG) out = out.replace(f.re, (...m) => fill(f, m));
+        }
+        for (const [re, to] of UNITS) out = out.replace(re, to);
+      }
+      if (cache.size > 3000) cache.clear();
+      cache.set(k, out);
+    }
+    if (out === k) return s;
+    const at = s.indexOf(k);
+    return s.slice(0, at) + out + s.slice(at + k.length);
+  }
+  window.tr = tr;
+
+  /* Times and dates come out in Arabic with Western digits, like the numbers around them, on a 24-hour clock. */
+  if (ar) for (const m of ["toLocaleTimeString", "toLocaleString", "toLocaleDateString"]) {
+    const f = Date.prototype[m];
+    Date.prototype[m] = function (_locales, opts) { return f.call(this, "ar-u-nu-latn-hc-h23", opts); };
+  }
+  if (ar && window.CanvasRenderingContext2D) {   // chart labels drawn on a canvas
+    const f = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (t, ...rest) { return f.call(this, words(String(t)), ...rest); };
+  }
+  if (ar) for (const m of ["alert", "confirm", "prompt"]) {
+    const f = window[m];
+    window[m] = (msg, ...rest) => f.call(window, tr(msg), ...rest);
+  }
+
+  const SKIP = "script,style,textarea,code,[translate=no]" + (T.skip ? "," + T.skip : "");   // T.skip: names people typed
+  const ATTRS = ["title", "aria-label", "placeholder", "alt"];
+  function attrs(e) {
+    for (const a of ATTRS) {
+      const v = e.getAttribute(a);
+      if (v) { const w = tr(v); if (w !== v) e.setAttribute(a, w); }
+    }
+  }
+  function text(n) {
+    const p = n.parentElement;
+    if (!p || p.closest(SKIP)) return;
+    const w = tr(n.nodeValue);
+    if (w !== n.nodeValue) n.nodeValue = w;
+  }
+  function walk(node) {
+    if (node.nodeType === 3) return text(node);
+    if (node.nodeType !== 1) return;
+    if (node.matches(SKIP)) {   // its text stays as written; tooltips and placeholders are still translated
+      if (!node.matches("script,style,[translate=no]")) attrs(node);
+      return;
+    }
+    const b = BLOCKS[norm(node.textContent)];
+    if (b !== undefined && node.children.length && !node.closest("[translate=no]")) { node.innerHTML = b; return; }
+    attrs(node);
+    for (const c of Array.from(node.childNodes)) walk(c);
+  }
+
+  function picker() {
+    const box = document.createElement("label");
+    box.className = "lang-pick";
+    box.setAttribute("translate", "no");
+    box.title = ar ? "اللغة" : "Language";
+    const sel = document.createElement("select");
+    sel.setAttribute("aria-label", ar ? "اللغة" : "Language");
+    for (const [v, name] of [["", ar ? "لغة الجهاز" : "Device language"], ["en", "English"], ["ar", "العربية"]]) {
+      const o = document.createElement("option"); o.value = v; o.textContent = name; sel.append(o);
+    }
+    sel.value = saved || "";
+    sel.addEventListener("change", () => {
+      try { if (sel.value) localStorage.setItem(KEY, sel.value); else localStorage.removeItem(KEY); } catch (e) { /* not kept */ }
+      location.reload();
+    });
+    box.append(Object.assign(document.createElement("span"), {textContent: "🌐", ariaHidden: "true"}), sel);
+    const style = document.createElement("style");
+    style.textContent = `.lang-pick{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--text2,inherit)}
+.lang-pick select{font:inherit;color:inherit;background:var(--surface,transparent);border:1px solid var(--border,#8884);border-radius:7px;padding:2px 4px;cursor:pointer}
+[dir=rtl] svg,[dir=rtl] canvas{direction:ltr}
+${T.css || ""}`;
+    document.head.append(style);
+    const spot = document.querySelector(T.mount || "header") || document.querySelector("main") || document.body;
+    if (T.prepend) {   // on its own line above the page's content
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;justify-content:flex-end;margin-bottom:8px";
+      row.append(box); spot.prepend(row);
+    } else spot.append(box);
+  }
+
+  function start() {
+    picker();
+    if (!ar) return;
+    document.title = tr(document.title);
+    walk(document.body);
+    new MutationObserver(records => {
+      for (const r of records) {
+        if (r.type === "characterData") text(r.target);
+        else if (r.type === "attributes") attrs(r.target);
+        else for (const n of r.addedNodes) walk(n);
+      }
+    }).observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS});
+  }
+  if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
+})();
+</script>
+<!-- /language -->
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const T = s => (window.tr ? window.tr(s) : s);
+const AREAS = [["", "All"], ["app", "App"], ["setup", "Setup"], ["router", "Router"], ["lock", "Tower lock"],
+               ["devices", "Devices"], ["hotspot", "Wi-Fi sharing"]];
+const AREA_NAME = Object.fromEntries(AREAS);
+let all = [], about = null, area = "", lastT = 0, open = new Set();
+try { area = sessionStorage.getItem("log-area") || ""; $("problems").checked = sessionStorage.getItem("log-problems") === "1"; } catch (e) { /* not kept */ }
+
+for (const [key, name] of AREAS) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chip"; b.textContent = name; b.dataset.area = key;
+  b.setAttribute("aria-pressed", String(key === area));
+  b.addEventListener("click", () => {
+    area = key;
+    for (const c of $("chips").children) c.setAttribute("aria-pressed", String(c.dataset.area === area));
+    try { sessionStorage.setItem("log-area", area); } catch (e) { /* not kept */ }
+    render();
+  });
+  $("chips").append(b);
+}
+$("problems").addEventListener("change", () => {
+  try { sessionStorage.setItem("log-problems", $("problems").checked ? "1" : "0"); } catch (e) { /* not kept */ }
+  render();
+});
+
+const pad = n => String(n).padStart(2, "0");
+const dayKey = t => { const d = new Date(t * 1000); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const clock = t => { const d = new Date(t * 1000); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
+function dayLabel(key) {
+  const today = dayKey(Date.now() / 1000), yesterday = dayKey(Date.now() / 1000 - 86400);
+  if (key === today) return "Today";
+  if (key === yesterday) return "Yesterday";
+  return new Date(key + "T12:00:00").toLocaleDateString(undefined, {weekday: "long", day: "numeric", month: "long"});
+}
+
+function shown() {
+  const problems = $("problems").checked;
+  return all.filter(e => (!area || e.area === area) && (!problems || e.level === "problem"));
+}
+
+function render() {
+  const list = shown().slice().reverse();      // newest first
+  const box = $("list");
+  box.replaceChildren();
+  if (about) {
+    $("summary").textContent = list.length === all.length
+      ? `${all.length === 1 ? "1 entry" : `${all.length} entries`} · ${about.version} on ${about.system}`
+      : `${list.length} entries shown of ${all.length} · ${about.version} on ${about.system}`;
+  }
+  if (!list.length) {
+    box.append(Object.assign(document.createElement("p"), {className: "empty",
+      textContent: $("problems").checked ? "No problems recorded." : "Nothing recorded here yet."}));
+    return;
+  }
+  let ul = null, day = null;
+  for (const e of list.slice(0, 1500)) {
+    const k = dayKey(e.t);
+    if (k !== day) {
+      day = k;
+      box.append(Object.assign(document.createElement("div"), {className: "day", textContent: dayLabel(k)}));
+      ul = document.createElement("ul"); box.append(ul);
+    }
+    const li = document.createElement("li");
+    li.className = `e ${e.level}` + (e.detail ? " has-detail" : "");
+    const id = `${e.t}|${e.text}`;
+    const time = Object.assign(document.createElement("span"), {className: "time", textContent: clock(e.t)});
+    const dot = Object.assign(document.createElement("span"), {className: "dot"});
+    dot.title = e.level;
+    const what = document.createElement("span"); what.className = "what";
+    what.append(Object.assign(document.createElement("span"), {className: "area", textContent: AREA_NAME[e.area] || e.area}),
+                Object.assign(document.createElement("span"), {className: "text", textContent: e.text}));
+    if (e.repeats) what.append(Object.assign(document.createElement("span"), {className: "rep", textContent: `×${e.repeats} more`}));
+    li.append(time, dot, what);
+    if (e.detail) {
+      li.title = "Tap an entry to see the details.";
+      if (open.has(id)) li.append(detail(e));
+      li.addEventListener("click", ev => {
+        if (ev.target.closest("pre")) return;      // let people select text in the details
+        if (open.has(id)) { open.delete(id); li.querySelector("pre")?.remove(); }
+        else { open.add(id); li.append(detail(e)); }
+      });
+    }
+    ul.append(li);
+  }
+}
+function detail(e) {
+  const pre = document.createElement("pre");
+  pre.setAttribute("translate", "no"); pre.dir = "ltr";
+  pre.textContent = e.detail;
+  return pre;
+}
+
+async function load() {
+  try {
+    const r = await fetch(`/api/log?since=${lastT}`, {cache: "no-store"});
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    about = d.about;
+    if (d.entries.length) {
+      all.push(...d.entries);
+      lastT = all[all.length - 1].t;
+    }
+    if (d.entries.length || !lastT) render();
+  } catch (e) {
+    $("summary").textContent = "Tower Monitor cannot be reached. Is it still open?";
+  }
+}
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = T(msg); t.classList.add("show");
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove("show"), 3500);
+}
+
+function report() {
+  const list = shown().slice(-400);
+  const lines = [
+    `Tower Monitor ${about?.version || "?"} activity report`,
+    `System: ${about?.system || "?"} · ${about?.machine || ""} · Python ${about?.python || "?"} · ${about?.kind || ""}`,
+    `Made: ${new Date().toLocaleString("en-GB")}`,
+    `Showing: ${area ? AREA_NAME[area] : "all areas"}${$("problems").checked ? ", problems only" : ""}, last ${list.length} of ${all.length} entries`,
+    "",
+  ];
+  for (const e of list) {
+    lines.push(`${dayKey(e.t)} ${clock(e.t)}  ${e.level.toUpperCase().padEnd(7)} ${e.area.padEnd(7)} ${e.text}` +
+               (e.repeats ? `  (+${e.repeats} more)` : ""));
+    if (e.detail) lines.push(...e.detail.split("\n").slice(0, 40).map(x => "      " + x));
+  }
+  return lines.join("\n");
+}
+
+$("copyBtn").addEventListener("click", async () => {
+  const text = report();
+  try {
+    await navigator.clipboard.writeText(text);
+    return toast("Copied. Paste it into a message.");
+  } catch (e) { /* fall back below */ }
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+  document.body.append(ta); ta.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+  ta.remove();
+  if (ok) return toast("Copied. Paste it into a message.");
+  // Last resort: show it so people can copy it by hand.
+  const pre = document.createElement("pre");
+  pre.setAttribute("translate", "no"); pre.dir = "ltr"; pre.textContent = text;
+  $("list").prepend(pre);
+  toast("Could not copy. Select the text below and copy it.");
+});
+
+async function post(path) {
+  const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
+  return r.ok ? r.json() : {ok: false};
+}
+$("folderBtn").addEventListener("click", async () => {
+  const r = await post("/api/log/folder").catch(() => ({ok: false}));
+  if (!r.ok) toast("Could not open the folder.");
+});
+$("clearBtn").addEventListener("click", async () => {
+  if (!confirm("Clear the activity log? This cannot be undone.")) return;
+  await post("/api/log/clear").catch(() => null);
+  all = []; lastT = 0; open.clear();
+  await load(); render();
+});
+
+load();
+setInterval(() => { if (document.visibilityState === "visible") load(); }, 4000);
+</script>
+</body>
+</html>

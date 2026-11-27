@@ -35,6 +35,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import activity
+
 HERE = os.environ.get("TOWER_MONITOR_DATA") or os.path.dirname(os.path.abspath(__file__))   # where data is kept
 USAGE_PATH = os.path.join(HERE, "device_usage.json")    # daily totals per device
 NAMES_PATH = os.path.join(HERE, "device_names.json")    # names the user typed
@@ -309,6 +311,15 @@ def log_action(text):
     line = time.strftime("%Y-%m-%d %H:%M:%S ") + text
     with open(ACTION_LOG, "a", encoding="utf-8") as f:
         f.write(line + "\n")
+    if "FAILED" in text:
+        summary, level = "A change on the TP-Link failed", "problem"
+    else:
+        level = "change"
+        summary = next((words for start, words in (
+            ("limit ", "Speed limit set"), ("removed limit", "Speed limit removed"),
+            ("block ", "Device blocked"), ("unblock ", "Device unblocked"),
+            ("reserved ", "Address reserved for a device")) if text.startswith(start)), "TP-Link setting changed")
+    activity.add("devices", summary, level, text)
 
 
 def today():
@@ -401,9 +412,17 @@ class Poller:
                 self.poll_once()
                 with LOCK:
                     STATE["error"] = None
+                if getattr(self, "failing", False):
+                    self.failing = False
+                    activity.add("devices", "The TP-Link can be read again", "change")
+                    activity.resolved("devices", "tplink")
             except Exception as e:   # router unreachable, wrong password, page changed ...
                 with LOCK:
                     STATE["error"] = f"Could not read the TP-Link: {e}"
+                self.failing = True
+                activity.add("devices", "Could not read the TP-Link", "problem",
+                             f"{self.tp.host}: {e!r}",
+                             quiet_key="tplink")
             time.sleep(max(1.0, POLL - (time.time() - t0)))
 
     def refresh_rules(self):

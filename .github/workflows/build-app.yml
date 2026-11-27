@@ -36,8 +36,11 @@ jobs:
 
       - name: Build the app
         run: |
-          export TOWER_MONITOR_VERSION="${GITHUB_REF_NAME#v}"
-          case "$TOWER_MONITOR_VERSION" in [0-9]*) ;; *) export TOWER_MONITOR_VERSION="0.0.0";; esac
+          V="$(python -c 'from version import VERSION; print(VERSION)')"
+          case "$GITHUB_REF" in refs/tags/v*)
+            [ "${GITHUB_REF_NAME#v}" = "$V" ] || { echo "Tag $GITHUB_REF_NAME does not match version.py ($V)"; exit 1; };;
+          esac
+          export TOWER_MONITOR_VERSION="$V"
           pyinstaller --noconfirm packaging/TowerMonitor.spec
 
       - name: Check that the app starts its server
@@ -86,9 +89,12 @@ jobs:
 
       - name: Build the app
         run: |
-          export TOWER_MONITOR_VERSION="${GITHUB_REF_NAME#v}"
-          case "$TOWER_MONITOR_VERSION" in [0-9]*) ;; *) export TOWER_MONITOR_VERSION="0.0.0";; esac
-          echo "TOWER_MONITOR_VERSION=$TOWER_MONITOR_VERSION" >> "$GITHUB_ENV"
+          V="$(python -c 'from version import VERSION; print(VERSION)')"
+          case "$GITHUB_REF" in refs/tags/v*)
+            [ "${GITHUB_REF_NAME#v}" = "$V" ] || { echo "Tag $GITHUB_REF_NAME does not match version.py ($V)"; exit 1; };;
+          esac
+          export TOWER_MONITOR_VERSION="$V"
+          echo "TOWER_MONITOR_VERSION=$V" >> "$GITHUB_ENV"
           pyinstaller --noconfirm packaging/TowerMonitor.spec
 
       # Starts the app the way a user does (its own window), with an empty settings folder,
@@ -99,7 +105,15 @@ jobs:
             TOWER_MONITOR_DATA="$RUNNER_TEMP/tm-$2" "$1" &
             for i in $(seq 1 60); do
               if curl -s http://127.0.0.1:8765/api/setup/status | grep -q '"needed": true'; then
-                echo "setup page is up ($1)"; taskkill //IM "Tower Monitor.exe" //F //T; sleep 2; return 0
+                echo "setup page is up ($1)"
+                ok=0
+                for page in /log /hotspot /i18n.js; do
+                  curl -sf "http://127.0.0.1:8765$page" > /dev/null && echo "  $page ok" || { echo "  $page FAILED"; ok=1; }
+                done
+                curl -s http://127.0.0.1:8765/api/log | grep -q 'started' && echo "  activity log ok" || { echo "  activity log FAILED"; ok=1; }
+                hs="$(curl -s --max-time 90 http://127.0.0.1:8765/api/hotspot/status)"; echo "  hotspot: $hs"
+                echo "$hs" | grep -q '"platform": "windows"' && ! echo "$hs" | grep -q '"error"' || { echo "  hotspot FAILED"; ok=1; }
+                taskkill //IM "Tower Monitor.exe" //F //T; sleep 2; return $ok
               fi
               sleep 1
             done

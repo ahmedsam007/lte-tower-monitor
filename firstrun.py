@@ -24,6 +24,8 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
+import activity
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.environ.get("TOWER_MONITOR_DATA") or HERE
 CONFIG_PATH = os.path.join(DATA, "config.json")
@@ -55,7 +57,7 @@ def needed():
 def gateways():
     """Default-gateway addresses from the routing table (macOS and Windows)."""
     try:
-        out = subprocess.run(["netstat", "-rn"], capture_output=True, text=True, timeout=6,
+        out = subprocess.run(["netstat", "-rn"], stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=6,
                              creationflags=NO_WINDOW).stdout
     except (OSError, subprocess.SubprocessError):
         return []
@@ -94,6 +96,21 @@ def probe(ip):
         return None
 
 
+_LAST_FOUND = [None]
+
+
+def _note_found(dlinks, candidates, others):
+    key = tuple((r["ip"], r["model"]) for r in dlinks)
+    if key == _LAST_FOUND[0]:
+        return
+    _LAST_FOUND[0] = key
+    detail = f"tried: {', '.join(candidates)}" + (f"; other web pages at: {', '.join(others)}" if others else "")
+    if not dlinks:
+        activity.add("setup", "No D-Link router found on this network", "problem", detail)
+    for r in dlinks:
+        activity.add("setup", f"Found a D-Link router at {r['ip']} ({r['model']})", "info", detail)
+
+
 def find_routers():
     cfg = read_config() or {}
     candidates = []
@@ -105,6 +122,7 @@ def find_routers():
     dlinks = [r for r in results if r.get("model")]
     dlinks.sort(key=lambda r: (not r["model"].upper().startswith("DWR"), candidates.index(r["ip"])))
     others = [r["ip"] for r in results if not r.get("model")]
+    _note_found(dlinks, candidates, others)
     return {"routers": dlinks, "others": others, "saved_host": cfg.get("host") if _filled(cfg.get("host")) else None}
 
 
@@ -219,6 +237,18 @@ def ssh_check(host, port, user, password):
 
 # ----------------------------------------------------------------------- connect
 def connect(body):
+    res = _connect(body)
+    host = str(body.get("host") or "").strip()[:80]
+    steps = "; ".join(res.get("steps") or []) or "-"
+    if res.get("ok"):
+        activity.add("setup", "Router settings saved", "change", f"router: {host}; steps: {steps}")
+    else:
+        activity.add("setup", res.get("message") or "Setup failed", "problem",
+                     f"router: {host}; failed at: {res.get('step')}; steps so far: {steps}")
+    return res
+
+
+def _connect(body):
     host = str(body.get("host") or "").strip()
     user = str(body.get("user") or "admin").strip() or "admin"
     password = str(body.get("password") or "")
@@ -361,6 +391,9 @@ def run_until_done(port, on_ready=None, *, reuse=None):
             self.wfile.write(body)
 
         def do_GET(self):
+            import extras
+            if extras.handle_get(self):
+                return
             p = urlparse(self.path).path
             if p.startswith("/api/setup/"):
                 if not same_origin(self.headers):
@@ -375,6 +408,9 @@ def run_until_done(port, on_ready=None, *, reuse=None):
             self.wfile.write(body)
 
         def do_POST(self):
+            import extras
+            if extras.handle_post(self):
+                return
             p = urlparse(self.path).path
             if not p.startswith("/api/setup/") or not same_origin(self.headers):
                 return self._json({"ok": False, "message": "not allowed"}, 403)
@@ -393,6 +429,7 @@ def run_until_done(port, on_ready=None, *, reuse=None):
         return None
     with srv:
         threading.Thread(target=srv.serve_forever, daemon=True).start()
+        activity.add("setup", "Setup started: the router password is needed")
         try:
             if on_ready:
                 on_ready(f"http://127.0.0.1:{srv.server_port}/setup")

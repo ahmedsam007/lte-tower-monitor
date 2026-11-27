@@ -33,7 +33,8 @@ def data_dir():
 os.environ.setdefault("TOWER_MONITOR_DATA", data_dir())
 os.makedirs(os.environ["TOWER_MONITOR_DATA"], exist_ok=True)
 
-import firstrun  # noqa: E402  (needs TOWER_MONITOR_DATA set first)
+import activity  # noqa: E402  (needs TOWER_MONITOR_DATA set first)
+import firstrun  # noqa: E402
 
 DRY_RUN = "--dry-run" in sys.argv
 
@@ -83,6 +84,7 @@ def run_backend(show):
         url = existing_page(port)
         if url is None:
             return False
+        activity.add("app", "Another copy of Tower Monitor is already open; showing it", "info", url)
         show(url)
         return True
 
@@ -129,7 +131,10 @@ def main_window(webview):
         if not shown["browser"]:
             try:
                 return window.load_url(url)
-            except Exception:  # noqa: BLE001  (window never appeared: fall back below)
+            except Exception as e:  # noqa: BLE001  (window never appeared: fall back below)
+                if not shown["browser"]:
+                    activity.problem_from_exception(
+                        "app", "The app window could not open; pages open in the web browser instead", e)
                 shown["browser"] = True
         webbrowser.open(url)
 
@@ -139,15 +144,18 @@ def main_window(webview):
         except SystemExit as e:              # server.py stops with a message on a bad config.json
             window.load_html(error_page(str(e.code) if e.code not in (None, 0, 1) else LAST_ERROR[0]))
         except Exception as e:  # noqa: BLE001
+            activity.problem_from_exception("app", "Tower Monitor could not start", e)
             window.load_html(error_page(f"Tower Monitor could not start: {e}"))
 
     worker = threading.Thread(target=backend, daemon=True)
     worker.start()
     try:
         webview.start(private_mode=False)   # keep page storage between launches, such as the chosen language
-    except Exception:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         # No usable window engine (on Windows: the WebView2 runtime is missing or broken).
         # Keep running and show the pages in the web browser instead.
+        activity.problem_from_exception(
+            "app", "The app window could not open; pages open in the web browser instead", e)
         already, shown["browser"] = shown["browser"], True
         if shown["url"] and not already:
             webbrowser.open(shown["url"])
@@ -198,6 +206,10 @@ def _capture_stop_messages():
 
 
 if __name__ == "__main__":
+    import atexit
+    activity.catch_crashes()
+    activity.started()
+    atexit.register(lambda: activity.add("app", "Tower Monitor closed"))
     try:
         import webview   # pywebview: only in the packaged app (or if you install it yourself)
     except ImportError:
