@@ -140,6 +140,9 @@ def status(action="status"):
                      "password": r.get("hotspot_password")} if state else None,
             manager_error=r.get("manager_error"),
         )
+        if r.get("manager_error") and out["internet"] != "disconnected":
+            activity.add("hotspot", "Could not use Mobile Hotspot", "problem", r["manager_error"],
+                         quiet_key="manager_error")
         if action != "status":
             result = r.get("result") or r.get("manager_error") or "?"
             ok = r.get("result") == "Success"

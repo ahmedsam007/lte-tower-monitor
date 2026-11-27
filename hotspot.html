@@ -94,7 +94,7 @@
     </div>
     <div class="btns">
       <button class="btn primary" type="button" id="hsToggle" disabled>Turn on Mobile Hotspot</button>
-      <button class="btn" type="button" data-open="hotspot">Change name or password</button>
+      <button class="btn" type="button" data-open="hotspot">Open Mobile Hotspot settings</button>
     </div>
     <p class="msg" id="hsMsg" hidden></p>
   </section>
@@ -158,7 +158,9 @@ window.I18N = (() => {
       "Password": "كلمة المرور",
       "Devices connected": "الأجهزة المتصلة",
       "On": "قيد التشغيل", "Off": "متوقفة", "Changing…": "جارٍ التغيير…",
-      "Change name or password": "تغيير الاسم أو كلمة المرور",
+      "Open Mobile Hotspot settings": "فتح إعدادات نقطة الاتصال المحمولة",
+      "Windows couldn't control Mobile Hotspot from here. Press Open Mobile Hotspot settings and turn it on there.":
+        "تعذّر على Windows التحكم بنقطة الاتصال المحمولة من هنا. اضغط «فتح إعدادات نقطة الاتصال المحمولة» وشغّلها من هناك.",
       "Share it from this Mac": "شاركها من هذا الـ Mac",
       "Open Sharing settings": "فتح إعدادات المشاركة",
       "Share it": "شاركها",
@@ -445,7 +447,8 @@ function render() {
   $("hsToggle").disabled = busy || !hs || !capable;
   if (!busy && !$("hsMsg").dataset.keep) {
     if (!capable) msg(CAPABILITY[st.capability] || "Windows says Mobile Hotspot isn't available on this connection.", true);
-    else if (!hs) msg("Windows couldn't read Mobile Hotspot. Connect to a network with internet first.", true);
+    else if (!hs && st.internet === "disconnected") msg("Windows couldn't read Mobile Hotspot. Connect to a network with internet first.", true);
+    else if (!hs) msg("Windows couldn't control Mobile Hotspot from here. Press Open Mobile Hotspot settings and turn it on there.", true);
     else msg("");
   }
 }
